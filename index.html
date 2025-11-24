@@ -3,7 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PDF Wizardz - Digital Grimoire</title>
+    <title>PDF Wizardz - Organizador PDF con IA y Privacidad 100% Local</title>
+    <meta name="description" content="Organiza, renombra y procesa PDFs con IA sin subir archivos a internet. Procesamiento 100% en tu navegador. Privacidad garantizada RGPD. Alternativa segura a otros editores de PDF." />
+    <meta name="keywords" content="organizar PDF, renombrar PDF automático, IA PDF privada, procesar PDF local, extraer datos PDF Excel, crear quiz PDF, flashcards PDF, plantilla Excel PDF, facturas PDF automático" />
+    <meta name="author" content="PDF Wizardz" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="PDF Wizardz - Organizador PDF con IA y Privacidad 100% Local" />
+    <meta property="og:description" content="Procesa PDFs con IA sin subir archivos. Organiza facturas, crea quizzes y rellena plantillas Excel automáticamente. Todo en tu navegador." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PDF Wizardz - IA para PDF 100% Privada" />
+    <meta name="twitter:description" content="Organiza PDFs con IA sin subir archivos. Privacidad garantizada." />
+    <link rel="canonical" href="https://pdfwizardz.app" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "PDF Wizardz",
+      "description": "Organizador PDF con IA y procesamiento 100% local. Renombra PDFs automáticamente, extrae datos a Excel, crea quizzes y flashcards. Privacidad garantizada.",
+      "url": "https://pdf-wizardz.app",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "featureList": [
+        "Renombrar PDFs automáticamente con IA",
+        "Extraer datos de facturas a Excel",
+        "Crear quizzes y flashcards desde PDFs",
+        "Procesamiento 100% local y privado",
+        "Sin subir archivos a internet"
+      ]
+    }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -66,26 +103,9 @@
         transform: rotateY(180deg);
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "xlsx": "https://aistudiocdn.com/xlsx@^0.18.5",
-    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "file-saver": "https://aistudiocdn.com/file-saver@^2.0.5",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "jszip": "https://aistudiocdn.com/jszip@^3.10.1",
-    "pdf-lib": "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm",
-    "docx": "https://cdn.jsdelivr.net/npm/docx@8.5.0/+esm",
-    "pptxgenjs": "https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.es.min.js"
-  }
-}
-</script>
-</head>
+  </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

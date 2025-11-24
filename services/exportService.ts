@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
 import { FileItem, ProcessingStatus } from '../types';
@@ -33,13 +32,19 @@ export const downloadResults = async (processedFiles: FileItem[]) => {
   }
 
   // 2. Create Excel Sheet
-  const worksheet = XLSX.utils.json_to_sheet(excelRows);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "PDF Log");
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  try {
+    const XLSX = await import('xlsx');
+    const worksheet = XLSX.utils.json_to_sheet(excelRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "PDF Log");
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
 
-  // 3. Add Excel to ZIP
-  zip.file("Processing_Report.xlsx", excelBuffer);
+    // 3. Add Excel to ZIP
+    zip.file("Processing_Report.xlsx", excelBuffer);
+  } catch (error) {
+    console.error('Error creating Excel file:', error);
+    alert('Error al crear el archivo Excel. Continuando sin el reporte Excel.');
+  }
 
   // 4. Generate and Download ZIP
   const blob = await zip.generateAsync({ type: "blob" });

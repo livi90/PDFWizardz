@@ -1,5 +1,5 @@
 {
-  "name": "Copy of PDF Wizardz",
+  "name": "PDF Wizardz.app - Magia Digital para Mortales",
   "description": "A retro-styled, intelligent PDF organizer. It extracts text, uses Gemini AI to rename and categorize files, and bundles them into a ZIP with an Excel report. All running client-side.",
   "requestFramePermissions": []
 }

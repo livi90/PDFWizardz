@@ -28,7 +28,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, setView, lang, setLang, t 
               className="w-full h-full object-cover p-1" 
             />
         </div>
-        <span className="text-xl md:text-2xl pixel-font-header text-indigo-400 neon-glow-text hidden sm:block">PDF WIZARDZ</span>
+        <span className="text-xl md:text-2xl pixel-font-header text-indigo-400 neon-glow-text hidden sm:block">PDF WIZARDZ.APP</span>
       </div>
 
       <div className="flex gap-4 items-center">
@@ -46,7 +46,13 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, setView, lang, setLang, t 
           </div>
 
           <button 
-            onClick={() => setView('AI_ORGANIZER')}
+            onClick={() => setView('PRICING')}
+            className="bg-yellow-600 text-black border-2 border-black px-4 py-1 retro-shadow hover:bg-yellow-500 active:translate-y-1 active:shadow-none transition-all font-bold font-vt323 mr-2"
+          >
+            {lang === 'ES' ? '💎 PREMIUM' : lang === 'EN' ? '💎 PREMIUM' : lang === 'DE' ? '💎 PREMIUM' : '💎 PREMIUM'}
+          </button>
+          <button 
+            onClick={() => setView('CHAT')}
             className="bg-indigo-600 text-white border-2 border-black px-4 py-1 retro-shadow hover:bg-indigo-500 active:translate-y-1 active:shadow-none transition-all font-bold font-vt323"
           >
             {t.startBtn}

@@ -4,18 +4,29 @@ import PixelCard from './components/PixelCard';
 import ProgressBar from './components/ProgressBar';
 import FileQueue from './components/FileQueue';
 import StudySession from './components/StudySession';
+import CookieBanner from './components/CookieBanner';
+import OracleView from './components/OracleView';
+import FeatureCard from './components/FeatureCard';
+import ChatSession from './components/ChatSession';
+import PricingPage from './components/PricingPage';
+import { getPremiumStatus } from './services/gumroadService';
 import { usePdfProcessor } from './hooks/usePdfProcessor';
 import { mergePdfs, imagesToPdf, splitPdf, addWatermark, convertToText, convertToImages, convertToDocx, convertToExcel, convertToPptx } from './services/pdfTools';
-import { generateQuiz, generateFlashcards } from './services/geminiService';
+import { generateQuiz, generateFlashcards, generateMindMapData } from './services/geminiService';
 import { extractTextFromPdf } from './services/pdfService';
+import { fillExcelTemplate, getTemplateKeys } from './services/excelTemplateService';
 import { getTranslation } from './services/translations';
-import { ViewType, Language, DocumentContext, StudyMaterial } from './types';
+import { ViewType, Language, DocumentContext, StudyMaterial, MindMapData } from './types';
+import { useSEO } from './hooks/useSEO';
 import { Upload, Wand2, Download, Trash2, FileText, Layers, Image as ImageIcon, Sparkles, ArrowRight, Scissors, PenTool, Type, FileStack, Repeat, FileSpreadsheet, Briefcase, GraduationCap, Scale, BookOpen, BrainCircuit, Presentation } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('HOME');
   const [lang, setLang] = useState<Language>('ES');
   const t = getTranslation(lang);
+  
+  // SEO: Actualizar título y meta tags según la vista
+  useSEO(currentView, lang);
   
   // AI Processor State
   const { 
@@ -46,6 +57,34 @@ const App: React.FC = () => {
 
   // Study State
   const [studyMaterial, setStudyMaterial] = useState<StudyMaterial | null>(null);
+  
+  // Oracle (Mind Map) State
+  const [mindMapData, setMindMapData] = useState<MindMapData | null>(null);
+  
+  // Chat State
+  const [chatPdfText, setChatPdfText] = useState<string>('');
+  const [chatPdfFileName, setChatPdfFileName] = useState<string>('');
+  
+  // Premium State - Cargar desde localStorage al iniciar
+  const [isPremium, setIsPremium] = useState<boolean>(() => {
+    const premiumStatus = getPremiumStatus();
+    return premiumStatus.isPremium;
+  });
+  
+  // Category Tabs State
+  const [activeCategory, setActiveCategory] = useState<'all' | 'education' | 'b2b' | 'tools'>('all');
+  
+  // Excel Template State
+  const [pdfsForTemplate, setPdfsForTemplate] = useState<File[]>([]);
+  const [excelTemplate, setExcelTemplate] = useState<File | null>(null);
+  const [isTemplateProcessing, setIsTemplateProcessing] = useState(false);
+  const [templateProgress, setTemplateProgress] = useState({ current: 0, total: 0 });
+  const [showFullTutorial, setShowFullTutorial] = useState(false);
+  const [showTargetedTip, setShowTargetedTip] = useState(false); // Tip de extracción dirigida
+  const [detectedKeys, setDetectedKeys] = useState<string[]>([]); // Runas detectadas
+  const [isScanningKeys, setIsScanningKeys] = useState(false);
+  const pdfTemplateInputRef = useRef<HTMLInputElement>(null);
+  const excelTemplateInputRef = useRef<HTMLInputElement>(null);
 
   // --- Handlers ---
   const handleAiFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,6 +206,93 @@ const App: React.FC = () => {
       }
   };
 
+  const executeOracle = async () => {
+      try {
+          setIsToolProcessing(true);
+          if (toolFiles.length !== 1) throw new Error(lang === 'ES' ? "Por favor, selecciona 1 archivo PDF." : "Please select 1 PDF file.");
+          
+          const text = await extractTextFromPdf(toolFiles[0], 50); // Hasta 50 páginas para mapas mentales
+          const mindMap = await generateMindMapData(text, lang);
+          setMindMapData(mindMap);
+      } catch (e: any) {
+          alert(lang === 'ES' ? "Error generando mapa mental: " + e.message : "Error generating mind map: " + e.message);
+      } finally {
+          setIsToolProcessing(false);
+      }
+  };
+
+  const executeChat = async () => {
+      try {
+          setIsToolProcessing(true);
+          if (toolFiles.length !== 1) throw new Error(lang === 'ES' ? "Por favor, selecciona 1 archivo PDF." : "Please select 1 PDF file.");
+          
+          // Extraer todo el texto del PDF (sin límite de páginas para chat)
+          const text = await extractTextFromPdf(toolFiles[0], Infinity);
+          setChatPdfText(text);
+          setChatPdfFileName(toolFiles[0].name);
+          setCurrentView('CHAT');
+      } catch (e: any) {
+          alert(lang === 'ES' ? "Error extrayendo texto: " + e.message : "Error extracting text: " + e.message);
+      } finally {
+          setIsToolProcessing(false);
+      }
+  };
+
+  // Handler para escanear las claves cuando se sube el Excel
+  const handleExcelTemplateChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setExcelTemplate(file);
+    setDetectedKeys([]);
+    
+    if (file) {
+      try {
+        setIsScanningKeys(true);
+        const keys = await getTemplateKeys(file);
+        setDetectedKeys(keys);
+      } catch (error) {
+        console.error('Error escaneando claves:', error);
+        alert(lang === 'ES' 
+          ? 'Error al escanear la plantilla. Continuando sin extracción dirigida...' 
+          : 'Error scanning template. Continuing without targeted extraction...');
+      } finally {
+        setIsScanningKeys(false);
+      }
+    }
+  };
+
+  const executeExcelTemplate = async () => {
+      try {
+          setIsTemplateProcessing(true);
+          setTemplateProgress({ current: 0, total: pdfsForTemplate.length });
+          
+          if (pdfsForTemplate.length === 0) throw new Error(lang === 'ES' ? "Por favor, sube al menos un archivo PDF." : "Please upload at least one PDF file.");
+          if (!excelTemplate) throw new Error(lang === 'ES' ? "Por favor, sube una plantilla Excel." : "Please upload an Excel template.");
+          
+          // Usar las claves detectadas para extracción dirigida
+          await fillExcelTemplate(
+            pdfsForTemplate, 
+            excelTemplate, 
+            lang,
+            (current, total) => setTemplateProgress({ current, total }),
+            detectedKeys.length > 0 ? detectedKeys : undefined
+          );
+          
+          alert(lang === 'ES' 
+            ? `¡${pdfsForTemplate.length} factura(s) procesada(s) exitosamente! Revisa tu descarga.` 
+            : `${pdfsForTemplate.length} invoice(s) processed successfully! Check your downloads.`);
+          
+          // Limpiar después de procesar
+          setPdfsForTemplate([]);
+          setExcelTemplate(null);
+          setDetectedKeys([]);
+      } catch (e: any) {
+          alert("Error: " + e.message);
+      } finally {
+          setIsTemplateProcessing(false);
+          setTemplateProgress({ current: 0, total: 0 });
+      }
+  };
+
   // --- Renders ---
 
   const renderHome = () => (
@@ -183,9 +309,9 @@ const App: React.FC = () => {
                    1. Guarda tu imagen (ej: mago.png) en la misma carpeta que index.html
                    2. Cambia el src de abajo así: src="./mago.png"
                 */}
-                <div className="w-48 h-48 bg-indigo-900 border-4 border-black rounded-full overflow-hidden relative shadow-[0_0_20px_rgba(99,102,241,0.6)] hover:scale-105 transition-transform duration-300">
+                <div className="w-58 h-58 bg-indigo-900 border-4 border-black rounded-full overflow-hidden relative shadow-[0_0_20px_rgba(99,102,241,0.6)] hover:scale-105 transition-transform duration-300">
                    <img 
-                     src="Images/cabeza mago.png" 
+                     src="/Images/cabeza mago.png" 
                      alt="Gran Mago PDF" 
                      className="w-full h-full object-cover p-2"
                    />
@@ -199,12 +325,21 @@ const App: React.FC = () => {
                    {t.heroTitle}<br/>
                    <span className="text-indigo-400 bg-gray-900 px-2 border-4 border-gray-700 transform -skew-x-6 inline-block mt-2 shadow-[4px_4px_0_0_rgba(79,70,229,0.5)]">{t.heroSubtitle}</span>
                 </h1>
-                <p className="text-xl md:text-2xl text-gray-400 mb-8 max-w-lg">
+                <p className="text-xl md:text-2xl text-gray-400 mb-4 max-w-lg">
                    {t.heroDesc}
                 </p>
+                {/* SEO Content - Visible but subtle */}
+                <div className="text-sm text-gray-500 mb-6 max-w-lg">
+                  <p className="mb-2">
+                    <strong className="text-emerald-400">🔒 100% Privado:</strong> Procesamiento completamente en tu navegador. Tus archivos nunca salen de tu PC. Alternativa segura a otros editores de PDF con privacidad RGPD garantizada.
+                  </p>
+                  <p>
+                    <strong className="text-indigo-400">✨ Automatización IA:</strong> Renombra 100 PDFs automáticamente por contenido. Extrae datos de facturas a Excel. Organiza carpetas desordenadas sin subir archivos a internet.
+                  </p>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                    <button 
-                     onClick={() => setCurrentView('AI_ORGANIZER')}
+                     onClick={() => setCurrentView('CHAT')}
                      className="bg-indigo-600 text-white text-xl px-8 py-3 border-4 border-black retro-shadow hover:bg-indigo-500 hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all font-bold font-vt323"
                    >
                      {t.startBtn}
@@ -220,71 +355,323 @@ const App: React.FC = () => {
          </div>
       </div>
 
-      {/* Feature Grid */}
-      <div id="tools" className="max-w-6xl mx-auto px-4 pb-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* Category Tabs in Header */}
+      <div className="w-full bg-gray-900 border-b-4 border-black sticky top-16 z-40 mb-6">
+         <div className="max-w-6xl mx-auto px-4 py-3">
+            <div className="flex flex-wrap gap-2 justify-center">
+               <button
+                  onClick={() => setActiveCategory('all')}
+                  className={`px-4 py-2 text-sm font-bold border-2 border-black transition-all ${
+                     activeCategory === 'all'
+                        ? 'bg-indigo-600 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+               >
+                  {lang === 'ES' ? '🔮 TODAS' : lang === 'EN' ? '🔮 ALL' : lang === 'DE' ? '🔮 ALLE' : '🔮 TOUTES'}
+               </button>
+               <button
+                  onClick={() => setActiveCategory('education')}
+                  className={`px-4 py-2 text-sm font-bold border-2 border-black transition-all flex items-center gap-2 ${
+                     activeCategory === 'education'
+                        ? 'bg-yellow-600 text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+               >
+                  <GraduationCap className="w-4 h-4" />
+                  {lang === 'ES' ? '📚 EDUCACIÓN' : lang === 'EN' ? '📚 EDUCATION' : lang === 'DE' ? '📚 BILDUNG' : '📚 ÉDUCATION'}
+               </button>
+               <button
+                  onClick={() => setActiveCategory('b2b')}
+                  className={`px-4 py-2 text-sm font-bold border-2 border-black transition-all flex items-center gap-2 ${
+                     activeCategory === 'b2b'
+                        ? 'bg-emerald-600 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+               >
+                  <Briefcase className="w-4 h-4" />
+                  {lang === 'ES' ? '💼 B2B' : lang === 'EN' ? '💼 B2B' : lang === 'DE' ? '💼 B2B' : '💼 B2B'}
+               </button>
+               <button
+                  onClick={() => setActiveCategory('tools')}
+                  className={`px-4 py-2 text-sm font-bold border-2 border-black transition-all flex items-center gap-2 ${
+                     activeCategory === 'tools'
+                        ? 'bg-blue-600 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)]'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+               >
+                  <FileText className="w-4 h-4" />
+                  {lang === 'ES' ? '🛠️ HERRAMIENTAS' : lang === 'EN' ? '🛠️ TOOLS' : lang === 'DE' ? '🛠️ TOOLS' : '🛠️ OUTILS'}
+               </button>
+            </div>
+         </div>
+         </div>
+
+      {/* Feature Grid - Organized by Categories */}
+      <div id="tools" className="max-w-6xl mx-auto px-4 pb-20">
          
-         {/* STUDY CARD */}
-         <div onClick={() => setCurrentView('STUDY')} className="group cursor-pointer bg-gray-800 border-4 border-black p-6 hover:-translate-y-2 transition-all retro-shadow hover:shadow-[8px_8px_0px_0px_rgba(234,179,8,0.5)] border-t-yellow-500 col-span-1 md:col-span-2 lg:col-span-1 relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-yellow-500 text-black px-2 py-0.5 text-xs font-bold">NEW</div>
-            <div className="bg-yellow-900/40 w-16 h-16 flex items-center justify-center border-2 border-yellow-700 mb-4 group-hover:bg-yellow-900/60">
-               <BrainCircuit className="w-8 h-8 text-yellow-400" />
+         {/* CATEGORÍA: B2B Y EDUCACIÓN JUNTAS cuando es "all" - Priorizando B2B */}
+         {activeCategory === 'all' ? (
+            <div className="mb-8">
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* B2B primero */}
+                  <FeatureCard
+                     title={t.excelTemplateTitle}
+                     description={t.excelTemplateDesc}
+                     shortDescription="Rellena plantillas Excel desde PDFs automáticamente."
+                     onClick={() => setCurrentView('EXCEL_TEMPLATE')}
+                     icon={FileSpreadsheet}
+                     color="bg-emerald-900"
+                     badge="B2B"
+                     badgeColor="bg-emerald-500"
+                     tags="Extraer datos • Rellenar plantillas • Múltiples facturas"
+                     borderColor="border-t-emerald-500"
+                     hoverShadow="8px_8px_0px_0px_rgba(16,185,129,0.5)"
+                     lang={lang}
+                  />
+                  <FeatureCard
+                     title={t.aiTitle}
+                     description={t.aiDesc}
+                     shortDescription="Renombra PDFs automáticamente por contenido con IA."
+                     onClick={() => setCurrentView('AI_ORGANIZER')}
+                     icon={Sparkles}
+                     color="bg-indigo-900"
+                     tags="Renombrar masivo • Organizar facturas • Procesamiento local"
+                     borderColor="border-t-indigo-500"
+                     hoverShadow="8px_8px_0px_0px_rgba(99,102,241,0.5)"
+                     lang={lang}
+                  />
+                  {/* Educación después */}
+                  <FeatureCard
+                     title={t.studyTitle}
+                     description={t.studyDesc}
+                     shortDescription="Crea test tipo examen y flashcards automáticamente desde PDFs."
+                     onClick={() => setCurrentView('STUDY')}
+                     icon={BrainCircuit}
+                     color="bg-yellow-900"
+                     badge="NEW"
+                     badgeColor="bg-yellow-500"
+                     tags="Crear test • Generar flashcards • Gamificación"
+                     borderColor="border-t-yellow-500"
+                     hoverShadow="8px_8px_0px_0px_rgba(234,179,8,0.5)"
+                     lang={lang}
+                  />
+                  <FeatureCard
+                     title={t.oracleTitle}
+                     description={t.oracleDesc}
+                     shortDescription="Genera mapas mentales interactivos desde PDFs."
+                     onClick={() => setCurrentView('ORACLE')}
+                     icon={BrainCircuit}
+                     color="bg-violet-900"
+                     badge="NEW"
+                     badgeColor="bg-violet-500"
+                     tags="Mapas mentales • Visualizar conocimiento • Grafos"
+                     borderColor="border-t-violet-500"
+                     hoverShadow="8px_8px_0px_0px_rgba(139,92,246,0.5)"
+                     lang={lang}
+                  />
+                  <FeatureCard
+                     title={t.chatTitle}
+                     description={t.chatDesc}
+                     shortDescription="Haz preguntas sobre el contenido del PDF y obtén respuestas precisas."
+                     onClick={() => setCurrentView('CHAT')}
+                     icon={FileText}
+                     color="bg-purple-900"
+                     badge="NEW"
+                     badgeColor="bg-purple-500"
+                     tags="Preguntas • Interrogación • IA conversacional"
+                     borderColor="border-t-purple-500"
+                     hoverShadow="8px_8px_0px_0px_rgba(168,85,247,0.5)"
+                     lang={lang}
+                  />
+               </div>
             </div>
-            <h3 className="text-2xl font-bold mb-2 pixel-font-header text-yellow-300">{t.studyTitle}</h3>
-            <p className="text-gray-400 text-lg">{t.studyDesc}</p>
+         ) : (
+            <>
+               {/* CATEGORÍA: CONTABLES / B2B - Solo cuando se selecciona B2B */}
+               {activeCategory === 'b2b' && (
+                  <div className="mb-8">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <FeatureCard
+                           title={t.excelTemplateTitle}
+                           description={t.excelTemplateDesc}
+                           shortDescription="Rellena plantillas Excel desde PDFs automáticamente."
+                           onClick={() => setCurrentView('EXCEL_TEMPLATE')}
+                           icon={FileSpreadsheet}
+                           color="bg-emerald-900"
+                           badge="B2B"
+                           badgeColor="bg-emerald-500"
+                           tags="Extraer datos • Rellenar plantillas • Múltiples facturas"
+                           borderColor="border-t-emerald-500"
+                           hoverShadow="8px_8px_0px_0px_rgba(16,185,129,0.5)"
+                           lang={lang}
+                        />
+                        <FeatureCard
+                           title={t.aiTitle}
+                           description={t.aiDesc}
+                           shortDescription="Renombra PDFs automáticamente por contenido con IA."
+                           onClick={() => setCurrentView('AI_ORGANIZER')}
+                           icon={Sparkles}
+                           color="bg-indigo-900"
+                           tags="Renombrar masivo • Organizar facturas • Procesamiento local"
+                           borderColor="border-t-indigo-500"
+                           hoverShadow="8px_8px_0px_0px_rgba(99,102,241,0.5)"
+                           lang={lang}
+                        />
+                     </div>
+                  </div>
+               )}
+
+               {/* CATEGORÍA: EDUCACIÓN - Solo cuando se selecciona Educación */}
+               {activeCategory === 'education' && (
+                  <div className="mb-8">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <FeatureCard
+                           title={t.studyTitle}
+                           description={t.studyDesc}
+                           shortDescription="Crea test tipo examen y flashcards automáticamente desde PDFs."
+                           onClick={() => setCurrentView('STUDY')}
+                           icon={BrainCircuit}
+                           color="bg-yellow-900"
+                           badge="NEW"
+                           badgeColor="bg-yellow-500"
+                           tags="Crear test • Generar flashcards • Gamificación"
+                           borderColor="border-t-yellow-500"
+                           hoverShadow="8px_8px_0px_0px_rgba(234,179,8,0.5)"
+                           lang={lang}
+                        />
+                        <FeatureCard
+                           title={t.oracleTitle}
+                           description={t.oracleDesc}
+                           shortDescription="Genera mapas mentales interactivos desde PDFs."
+                           onClick={() => setCurrentView('ORACLE')}
+                           icon={BrainCircuit}
+                           color="bg-violet-900"
+                           badge="NEW"
+                           badgeColor="bg-violet-500"
+                           tags="Mapas mentales • Visualizar conocimiento • Grafos"
+                           borderColor="border-t-violet-500"
+                           hoverShadow="8px_8px_0px_0px_rgba(139,92,246,0.5)"
+                           lang={lang}
+                        />
+                        <FeatureCard
+                           title={t.chatTitle}
+                           description={t.chatDesc}
+                           shortDescription="Haz preguntas sobre el contenido del PDF y obtén respuestas precisas."
+                           onClick={() => setCurrentView('CHAT')}
+                           icon={FileText}
+                           color="bg-purple-900"
+                           badge="NEW"
+                           badgeColor="bg-purple-500"
+                           tags="Preguntas • Interrogación • IA conversacional"
+                           borderColor="border-t-purple-500"
+                           hoverShadow="8px_8px_0px_0px_rgba(168,85,247,0.5)"
+                           lang={lang}
+                        />
+                     </div>
+                  </div>
+               )}
+            </>
+         )}
+
+         {/* CATEGORÍA: HERRAMIENTAS BÁSICAS */}
+         {(activeCategory === 'all' || activeCategory === 'tools') && (
+            <div className="mb-8">
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <FeatureCard
+                     title={t.mergeTitle}
+                     description={t.mergeDesc}
+                     onClick={() => setCurrentView('MERGE')}
+                     icon={Layers}
+                     color="bg-emerald-900"
+                     borderColor="border-t-emerald-500"
+                     hoverShadow="8px_8px_0px_0px_rgba(16,185,129,0.5)"
+                     lang={lang}
+                  />
+                  <FeatureCard
+                     title={t.splitTitle}
+                     description={t.splitDesc}
+                     onClick={() => setCurrentView('SPLIT')}
+                     icon={Scissors}
+                     color="bg-rose-900"
+                     borderColor="border-t-rose-500"
+                     hoverShadow="8px_8px_0px_0px_rgba(239,68,68,0.5)"
+                     lang={lang}
+                  />
+                  <FeatureCard
+                     title={t.convertTitle}
+                     description={t.convertDesc}
+                     onClick={() => setCurrentView('CONVERT')}
+                     icon={Repeat}
+                     color="bg-pink-900"
+                     borderColor="border-t-pink-500"
+                     hoverShadow="8px_8px_0px_0px_rgba(236,72,153,0.5)"
+                     lang={lang}
+                  />
+                  <FeatureCard
+                     title={t.imgTitle}
+                     description={t.imgDesc}
+                     onClick={() => setCurrentView('IMG_TO_PDF')}
+                     icon={ImageIcon}
+                     color="bg-amber-900"
+                     borderColor="border-t-amber-500"
+                     hoverShadow="8px_8px_0px_0px_rgba(245,158,11,0.5)"
+                     lang={lang}
+                  />
+                  <FeatureCard
+                     title={t.editTitle}
+                     description={t.editDesc}
+                     onClick={() => setCurrentView('EDIT')}
+                     icon={PenTool}
+                     color="bg-purple-900"
+                     borderColor="border-t-purple-500"
+                     hoverShadow="8px_8px_0px_0px_rgba(168,85,247,0.5)"
+                     lang={lang}
+                  />
+               </div>
+            </div>
+         )}
          </div>
 
-         <div onClick={() => setCurrentView('AI_ORGANIZER')} className="group cursor-pointer bg-gray-800 border-4 border-black p-6 hover:-translate-y-2 transition-all retro-shadow hover:shadow-[8px_8px_0px_0px_rgba(99,102,241,0.5)] border-t-indigo-500">
-            <div className="bg-indigo-900/40 w-16 h-16 flex items-center justify-center border-2 border-indigo-700 mb-4 group-hover:bg-indigo-900/60">
-               <Sparkles className="w-8 h-8 text-indigo-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2 pixel-font-header text-indigo-300">{t.aiTitle}</h3>
-            <p className="text-gray-400 text-lg">{t.aiDesc}</p>
+      {/* Google AdSense Placeholder - Reemplazar con código de AdSense después de aprobación */}
+      <div className="w-full max-w-4xl bg-gray-900 border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 mb-8 mx-auto font-mono text-sm tracking-widest min-h-[100px]">
+         <div className="text-center p-4">
+            <p className="mb-2">[{t.ads}]</p>
+            <p className="text-xs text-gray-500">Anunciate aqui</p>
          </div>
-
-         <div onClick={() => setCurrentView('CONVERT')} className="group cursor-pointer bg-gray-800 border-4 border-black p-6 hover:-translate-y-2 transition-all retro-shadow hover:shadow-[8px_8px_0px_0px_rgba(236,72,153,0.5)] border-t-pink-500">
-            <div className="bg-pink-900/40 w-16 h-16 flex items-center justify-center border-2 border-pink-700 mb-4 group-hover:bg-pink-900/60">
-               <Repeat className="w-8 h-8 text-pink-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2 pixel-font-header text-pink-300">{t.convertTitle}</h3>
-            <p className="text-gray-400 text-lg">{t.convertDesc}</p>
+         {/* 
+         INSTRUCCIONES PARA ADDSENSE:
+         1. Una vez aprobado por AdSense, reemplaza este div con:
+         <div className="w-full max-w-4xl mb-8 mx-auto">
+            <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-TU_ID_AQUI" crossOrigin="anonymous"></script>
+            <ins className="adsbygoogle"
+                 style={{display:"block"}}
+                 data-ad-client="ca-pub-TU_ID_AQUI"
+                 data-ad-slot="TU_SLOT_AQUI"
+                 data-ad-format="auto"
+                 data-full-width-responsive="true"></ins>
+            <script>
+              (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
          </div>
-
-         <div onClick={() => setCurrentView('MERGE')} className="group cursor-pointer bg-gray-800 border-4 border-black p-6 hover:-translate-y-2 transition-all retro-shadow hover:shadow-[8px_8px_0px_0px_rgba(16,185,129,0.5)] border-t-emerald-500">
-            <div className="bg-emerald-900/40 w-16 h-16 flex items-center justify-center border-2 border-emerald-700 mb-4 group-hover:bg-emerald-900/60">
-               <Layers className="w-8 h-8 text-emerald-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2 pixel-font-header text-emerald-300">{t.mergeTitle}</h3>
-            <p className="text-gray-400 text-lg">{t.mergeDesc}</p>
-         </div>
-
-         <div onClick={() => setCurrentView('SPLIT')} className="group cursor-pointer bg-gray-800 border-4 border-black p-6 hover:-translate-y-2 transition-all retro-shadow hover:shadow-[8px_8px_0px_0px_rgba(239,68,68,0.5)] border-t-rose-500">
-            <div className="bg-rose-900/40 w-16 h-16 flex items-center justify-center border-2 border-rose-700 mb-4 group-hover:bg-rose-900/60">
-               <Scissors className="w-8 h-8 text-rose-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2 pixel-font-header text-rose-300">{t.splitTitle}</h3>
-            <p className="text-gray-400 text-lg">{t.splitDesc}</p>
-         </div>
-
-         <div onClick={() => setCurrentView('IMG_TO_PDF')} className="group cursor-pointer bg-gray-800 border-4 border-black p-6 hover:-translate-y-2 transition-all retro-shadow hover:shadow-[8px_8px_0px_0px_rgba(245,158,11,0.5)] border-t-amber-500">
-            <div className="bg-amber-900/40 w-16 h-16 flex items-center justify-center border-2 border-amber-700 mb-4 group-hover:bg-amber-900/60">
-               <ImageIcon className="w-8 h-8 text-amber-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2 pixel-font-header text-amber-300">{t.imgTitle}</h3>
-            <p className="text-gray-400 text-lg">{t.imgDesc}</p>
-         </div>
-
-         <div onClick={() => setCurrentView('EDIT')} className="group cursor-pointer bg-gray-800 border-4 border-black p-6 hover:-translate-y-2 transition-all retro-shadow hover:shadow-[8px_8px_0px_0px_rgba(168,85,247,0.5)] border-t-purple-500">
-            <div className="bg-purple-900/40 w-16 h-16 flex items-center justify-center border-2 border-purple-700 mb-4 group-hover:bg-purple-900/60">
-               <PenTool className="w-8 h-8 text-purple-400" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2 pixel-font-header text-purple-300">{t.editTitle}</h3>
-            <p className="text-gray-400 text-lg">{t.editDesc}</p>
-         </div>
+         */}
       </div>
       
-      {/* Ads Placeholder */}
-      <div className="w-full max-w-4xl h-24 bg-gray-900 border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 mb-8 mx-auto font-mono text-sm tracking-widest">
-         [{t.ads}]
+      {/* SEO Content - Hidden but readable by search engines */}
+      <div className="hidden">
+        <h2>Organizar Facturas PDF sin Subir a Internet</h2>
+        <p>Herramienta de procesamiento PDF 100% local. Tus archivos nunca salen de tu PC. Procesamiento completamente en tu navegador sin necesidad de conexión a servidores externos. Alternativa segura a otros editores de PDF con privacidad RGPD garantizada.</p>
+        
+        <h2>Renombrar 100 PDFs Automáticamente por Contenido</h2>
+        <p>Usa IA para renombrar masivamente archivos PDF. Extrae automáticamente fecha, entidad y categoría del contenido. Organiza carpetas desordenadas de escaneos. Perfecto para contables, administrativos y secretarios que manejan documentos confidenciales.</p>
+        
+        <h2>Extraer Datos de Facturas a Excel Gratis</h2>
+        <p>Pasa datos de PDF a plantilla Excel automáticamente. Rellena formularios gubernamentales y reportes corporativos. Procesa múltiples facturas a la vez. Extrae fecha, total, impuesto, empresa y más sin subir archivos.</p>
+        
+        <h2>Crear Test Tipo Examen de un PDF Automáticamente</h2>
+        <p>Genera preguntas de opción múltiple desde tus apuntes PDF. Crea flashcards de estudio con IA. Resumir temario de oposición a preguntas y respuestas. Estudiar PDF con gamificación. Perfecto para estudiantes universitarios y opositores.</p>
+        
+        <h2>IA para PDF Privada y Segura</h2>
+        <p>Procesamiento de documentos con inteligencia artificial sin comprometer tu privacidad. Todos los archivos se procesan localmente en tu navegador. No se almacenan en servidores externos. Cumplimiento total con RGPD y normativas de privacidad.</p>
       </div>
     </div>
   );
@@ -481,6 +868,310 @@ const App: React.FC = () => {
          ), 1)}
 
          {/* STUDY MODE */}
+         {currentView === 'EXCEL_TEMPLATE' && (
+            <div className="max-w-3xl w-full mx-auto p-4 md:p-8">
+                <div className="mb-6 flex items-center gap-2 text-gray-500 cursor-pointer hover:underline" onClick={() => setCurrentView('HOME')}>
+                    <ArrowRight className="transform rotate-180" /> {t.back}
+                </div>
+                <div className="text-center mb-8">
+                    <h2 className="text-4xl pixel-font-header text-gray-200 mb-2 neon-glow-text">{t.excelTemplateTitle}</h2>
+                    <p className="text-xl text-gray-400 font-bold">{t.excelTemplateDesc}</p>
+                </div>
+                <PixelCard title="PLANTILLA EXCEL INTELIGENTE" color="emerald" className="text-center">
+                    <div className="space-y-6">
+                        {/* PDF Input - Multiple */}
+                        <div>
+                            <label className="block text-left text-emerald-300 font-bold mb-2">
+                                1. Sube tus PDFs (Facturas/Documentos) - Múltiples archivos:
+                            </label>
+                            <input 
+                                type="file" 
+                                accept=".pdf" 
+                                multiple
+                                onChange={(e) => {
+                                    if (e.target.files) {
+                                        setPdfsForTemplate(Array.from(e.target.files));
+                                    }
+                                }} 
+                                ref={pdfTemplateInputRef}
+                                className="hidden"
+                            />
+                            <div 
+                                onClick={() => pdfTemplateInputRef.current?.click()} 
+                                className="border-4 border-dashed border-emerald-700 bg-emerald-900/20 p-8 cursor-pointer hover:bg-emerald-900/30 flex flex-col items-center gap-2"
+                            >
+                                <FileText className="w-12 h-12 text-emerald-400" />
+                                <div className="text-lg font-bold text-emerald-300">
+                                    {pdfsForTemplate.length > 0 
+                                        ? `${pdfsForTemplate.length} PDF(s) seleccionado(s)` 
+                                        : 'SELECCIONAR PDFs (MÚLTIPLES)'}
+                                </div>
+                                {pdfsForTemplate.length > 0 && (
+                                    <div className="mt-2 text-sm text-emerald-400 max-h-32 overflow-y-auto w-full text-left px-4">
+                                        {pdfsForTemplate.map((file, idx) => (
+                                            <div key={idx} className="truncate">• {file.name}</div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Excel Template Input */}
+                        <div>
+                            <label className="block text-left text-emerald-300 font-bold mb-2">2. Sube tu Plantilla Excel con Marcadores:</label>
+                            <input 
+                                type="file" 
+                                accept=".xlsx,.xls" 
+                                onChange={handleExcelTemplateChange} 
+                                ref={excelTemplateInputRef}
+                                className="hidden"
+                            />
+                            <div 
+                                onClick={() => excelTemplateInputRef.current?.click()} 
+                                className="border-4 border-dashed border-emerald-700 bg-emerald-900/20 p-8 cursor-pointer hover:bg-emerald-900/30 flex flex-col items-center gap-2"
+                            >
+                                <FileSpreadsheet className="w-12 h-12 text-emerald-400" />
+                                <div className="text-lg font-bold text-emerald-300">
+                                    {excelTemplate ? excelTemplate.name : 'SELECCIONAR PLANTILLA EXCEL'}
+                                </div>
+                                {isScanningKeys && (
+                                    <div className="text-sm text-emerald-400 flex items-center gap-2 mt-2">
+                                        <Sparkles className="w-4 h-4 animate-spin" />
+                                        {lang === 'ES' ? 'Escaneando Runas...' : 'Scanning Runes...'}
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Mostrar Runas Detectadas */}
+                            {detectedKeys.length > 0 && (
+                                <div className="mt-4 bg-indigo-900/40 border-4 border-indigo-600 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Sparkles className="w-6 h-6 text-indigo-400" />
+                                        <h3 className="text-lg font-bold text-indigo-300 pixel-font-header">
+                                            {lang === 'ES' ? '🔮 RUNAS DETECTADAS' : '🔮 DETECTED RUNES'}
+                                        </h3>
+                                    </div>
+                                    <p className="text-sm text-indigo-200 mb-3">
+                                        {lang === 'ES' 
+                                            ? 'La IA buscará específicamente estos campos en tus PDFs:' 
+                                            : 'The AI will specifically search for these fields in your PDFs:'}
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {detectedKeys.map((key, idx) => (
+                                            <div 
+                                                key={idx}
+                                                className="bg-indigo-800 border-2 border-indigo-500 px-3 py-1.5 rounded font-mono text-sm font-bold text-indigo-200"
+                                            >
+                                                {`{{${key}}}`}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-indigo-400 mt-3 italic">
+                                        {lang === 'ES' 
+                                            ? '✨ Modo Extracción Dirigida activado - La IA será más precisa' 
+                                            : '✨ Targeted Extraction Mode activated - AI will be more precise'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Tutorial Section - Compact */}
+                        <div className="bg-emerald-900/30 border-2 border-emerald-800 p-4 text-left space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="text-emerald-200 font-bold text-lg">📚 {t.excelTemplateTutorial}</div>
+                                <button
+                                    onClick={() => setShowFullTutorial(!showFullTutorial)}
+                                    className="text-emerald-400 hover:text-emerald-300 text-sm font-bold underline"
+                                >
+                                    {showFullTutorial ? (lang === 'ES' ? 'Ver menos' : 'Show less') : (lang === 'ES' ? 'Ver más' : 'Show more')}
+                                </button>
+                            </div>
+                            <div className="text-sm text-emerald-300">
+                                {t.excelTemplateTutorialDesc}
+                            </div>
+                            
+                            {/* Example 1 - Always Visible */}
+                            <div>
+                                <div className="text-emerald-200 font-bold mb-2 text-xs">Ejemplo 1: Plantilla con 1 fila (para 1 factura)</div>
+                                <div className="bg-gray-900 border border-emerald-700 p-3 rounded">
+                                    <table className="w-full text-xs border-collapse">
+                                        <thead>
+                                            <tr className="bg-emerald-900/50">
+                                                <th className="border border-emerald-700 p-2 text-left">FECHA</th>
+                                                <th className="border border-emerald-700 p-2 text-left">EMPRESA</th>
+                                                <th className="border border-emerald-700 p-2 text-left">TOTAL</th>
+                                                <th className="border border-emerald-700 p-2 text-left">IMPUESTO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{FECHA}}"}</code></td>
+                                                <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{EMPRESA}}"}</code></td>
+                                                <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{TOTAL}}"}</code></td>
+                                                <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{IMPUESTO}}"}</code></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            {/* Example 2 - Collapsible */}
+                            {showFullTutorial && (
+                                <div className="space-y-3">
+                                    <div>
+                                        <div className="text-emerald-200 font-bold mb-2 text-xs">Ejemplo 2: Plantilla con 6 filas (para 6 facturas)</div>
+                                        <div className="bg-gray-900 border border-emerald-700 p-3 rounded max-h-64 overflow-y-auto">
+                                            <table className="w-full text-xs border-collapse">
+                                                <thead className="sticky top-0 bg-emerald-900/50">
+                                                    <tr>
+                                                        <th className="border border-emerald-700 p-2 text-left">FECHA</th>
+                                                        <th className="border border-emerald-700 p-2 text-left">EMPRESA</th>
+                                                        <th className="border border-emerald-700 p-2 text-left">TOTAL</th>
+                                                        <th className="border border-emerald-700 p-2 text-left">IMPUESTO</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {[1, 2, 3, 4, 5, 6].map((row) => (
+                                                        <tr key={row}>
+                                                            <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{FECHA}}"}</code></td>
+                                                            <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{EMPRESA}}"}</code></td>
+                                                            <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{TOTAL}}"}</code></td>
+                                                            <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{IMPUESTO}}"}</code></td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div className="text-xs text-emerald-400 mt-2 italic">
+                                            ⚠️ Importante: Si subes 6 PDFs, tu plantilla debe tener 6 filas con marcadores. Cada fila será reemplazada con los datos de una factura.
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Info Box - Marcadores y Extracción Dirigida (Side by Side) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Marcadores Disponibles */}
+                            <div className="bg-emerald-900/30 border-2 border-emerald-800 p-4 text-left">
+                                <div className="text-emerald-200 font-bold mb-2">💡 Marcadores Disponibles:</div>
+                                <div className="text-sm text-emerald-300 space-y-1">
+                                    <div><code className="bg-black px-2 py-1">{"{{FECHA}}"}</code> - Fecha del documento</div>
+                                    <div><code className="bg-black px-2 py-1">{"{{TOTAL}}"}</code> - Monto total</div>
+                                    <div><code className="bg-black px-2 py-1">{"{{IMPUESTO}}"}</code> - IVA/Impuesto</div>
+                                    <div><code className="bg-black px-2 py-1">{"{{EMPRESA}}"}</code> - Nombre de la empresa</div>
+                                    <div><code className="bg-black px-2 py-1">{"{{CLIENTE}}"}</code> - Nombre del cliente</div>
+                                    <div><code className="bg-black px-2 py-1">{"{{NUMERO}}"}</code> - Número de factura</div>
+                                    <div><code className="bg-black px-2 py-1">{"{{CONCEPTO}}"}</code> - Descripción/Concepto</div>
+                                </div>
+                            </div>
+                            
+                            {/* Extracción Dirigida - Más Visible */}
+                            <div className="bg-indigo-900/40 border-2 border-indigo-600 p-4 text-left">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Sparkles className="w-5 h-5 text-indigo-400" />
+                                    <div className="text-indigo-200 font-bold">
+                                        {lang === 'ES' ? '✨ Extracción Dirigida' : '✨ Targeted Extraction'}
+                                    </div>
+                                </div>
+                                <div className="text-sm text-indigo-300 mb-3">
+                                    {lang === 'ES' ? (
+                                        <>
+                                            <p className="mb-2">El sistema detecta <strong>automáticamente</strong> todas tus variables personalizadas al subir la plantilla.</p>
+                                            <p className="mb-2">La IA buscará <strong>específicamente</strong> esos campos para máxima precisión.</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p className="mb-2">The system <strong>automatically detects</strong> all your custom variables when you upload the template.</p>
+                                            <p className="mb-2">The AI will <strong>specifically search</strong> for those fields for maximum precision.</p>
+                                        </>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => setShowTargetedTip(!showTargetedTip)}
+                                    className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 w-full text-left font-semibold"
+                                >
+                                    <span className="flex-1">
+                                        {lang === 'ES' 
+                                            ? '📖 Ver ejemplo de campos personalizados' 
+                                            : '📖 See custom fields example'}
+                                    </span>
+                                    <span className="text-indigo-500">
+                                        {showTargetedTip ? '▼' : '▶'}
+                                    </span>
+                                </button>
+                                {showTargetedTip && (
+                                    <div className="mt-3 text-xs text-indigo-300/90 bg-indigo-950/50 p-3 rounded border border-indigo-700">
+                                        {lang === 'ES' ? (
+                                            <>
+                                                <p className="mb-2 font-semibold">Ejemplos de campos personalizados:</p>
+                                                <div className="space-y-1 mb-2">
+                                                    <div><code className="bg-black px-2 py-1">{"{{CODIGO_SWIFT}}"}</code> → busca "SWIFT Code", "Código SWIFT"</div>
+                                                    <div><code className="bg-black px-2 py-1">{"{{NUMERO_LOTE}}"}</code> → busca "Número de Lote", "Lot Number"</div>
+                                                    <div><code className="bg-black px-2 py-1">{"{{CLIENTE_VIP}}"}</code> → busca "Cliente VIP", "VIP Client"</div>
+                                                </div>
+                                                <p className="text-indigo-400/80 italic">Puedes usar <strong>cualquier nombre</strong> entre llaves dobles.</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <p className="mb-2 font-semibold">Custom fields examples:</p>
+                                                <div className="space-y-1 mb-2">
+                                                    <div><code className="bg-black px-2 py-1">{"{{SWIFT_CODE}}"}</code> → searches "SWIFT Code", "Código SWIFT"</div>
+                                                    <div><code className="bg-black px-2 py-1">{"{{LOT_NUMBER}}"}</code> → searches "Lot Number", "Número de Lote"</div>
+                                                    <div><code className="bg-black px-2 py-1">{"{{VIP_CLIENT}}"}</code> → searches "VIP Client", "Cliente VIP"</div>
+                                                </div>
+                                                <p className="text-indigo-400/80 italic">You can use <strong>any name</strong> between double braces.</p>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        {isTemplateProcessing && templateProgress.total > 0 && (
+                            <div className="bg-emerald-900/30 border-2 border-emerald-800 p-4">
+                                <div className="text-emerald-200 font-bold mb-2 text-center">
+                                    Procesando {templateProgress.current} de {templateProgress.total} facturas...
+                                </div>
+                                <div className="w-full bg-gray-800 border-2 border-black h-6 relative">
+                                    <div 
+                                        className="bg-emerald-600 h-full transition-all duration-300"
+                                        style={{ width: `${(templateProgress.current / templateProgress.total) * 100}%` }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Action Button */}
+                        <div className="flex gap-4 justify-center">
+                            <button 
+                                onClick={executeExcelTemplate} 
+                                disabled={isTemplateProcessing || pdfsForTemplate.length === 0 || !excelTemplate}
+                                className="bg-emerald-600 text-white border-4 border-emerald-800 px-8 py-4 font-bold text-xl retro-shadow flex items-center gap-2 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isTemplateProcessing ? <Sparkles className="animate-spin" /> : <Wand2 />}
+                                {isTemplateProcessing 
+                                    ? (lang === 'ES' ? `PROCESANDO ${templateProgress.current}/${templateProgress.total}...` : `PROCESSING ${templateProgress.current}/${templateProgress.total}...`) 
+                                    : (lang === 'ES' ? `RELLENAR PLANTILLA (${pdfsForTemplate.length} PDFs)` : `FILL TEMPLATE (${pdfsForTemplate.length} PDFs)`)}
+                            </button>
+                            <button 
+                                onClick={() => { 
+                                  setPdfsForTemplate([]); 
+                                  setExcelTemplate(null); 
+                                  setDetectedKeys([]);
+                                }} 
+                                disabled={isTemplateProcessing}
+                                className="bg-rose-600 text-white border-4 border-black px-4 py-3 font-bold retro-shadow hover:bg-rose-500 disabled:opacity-50"
+                            >
+                                <Trash2 />
+                            </button>
+                        </div>
+                    </div>
+                </PixelCard>
+            </div>
+         )}
+
          {currentView === 'STUDY' && (
              studyMaterial ? (
                  <div className="max-w-4xl mx-auto p-8">
@@ -512,11 +1203,76 @@ const App: React.FC = () => {
              )
          )}
 
+         {currentView === 'ORACLE' && (
+             mindMapData ? (
+                 <OracleView 
+                    mindMapData={mindMapData} 
+                    onClose={() => { setMindMapData(null); setToolFiles([]); }}
+                    lang={lang}
+                 />
+             ) : (
+                renderSimpleTool(t.oracleTitle, t.oracleDesc, ".pdf", lang === 'ES' ? "GENERAR MAPA MENTAL" : "GENERATE MIND MAP", executeOracle, 'blue', undefined, 1)
+             )
+         )}
+
+         {currentView === 'CHAT' && (
+             chatPdfText ? (
+                 <ChatSession 
+                    pdfText={chatPdfText}
+                    pdfFileName={chatPdfFileName}
+                    onClose={() => { setChatPdfText(''); setChatPdfFileName(''); setToolFiles([]); setCurrentView('HOME'); }}
+                    lang={lang}
+                    isPremium={isPremium}
+                 />
+             ) : (
+                renderSimpleTool(t.chatTitle, t.chatDesc, ".pdf", lang === 'ES' ? "INVOCAR ESPÍRITU" : "INVOKE SPIRIT", executeChat, 'pink', undefined, 1)
+             )
+         )}
+
+         {currentView === 'PRICING' && (
+             <PricingPage
+                lang={lang}
+                isPremium={isPremium}
+                onPremiumActivated={() => {
+                    setIsPremium(true);
+                    setCurrentView('HOME');
+                }}
+                onGoToHome={() => setCurrentView('HOME')}
+             />
+         )}
+
       </main>
 
       <footer className="text-center py-8 text-gray-600 border-t-2 border-black mt-auto bg-gray-900">
-          <p>© {new Date().getFullYear()} {t.footer}</p>
+          <p className="mb-4">© {new Date().getFullYear()} {t.footer}</p>
+          <div className="flex flex-wrap justify-center gap-4 text-sm">
+            <a 
+              href="/privacy-policy.html" 
+              target="_blank" 
+              className="text-indigo-400 hover:text-indigo-300 underline"
+            >
+              {lang === 'ES' ? 'Política de Privacidad' : lang === 'EN' ? 'Privacy Policy' : lang === 'DE' ? 'Datenschutzerklärung' : 'Politique de Confidentialité'}
+            </a>
+            <span className="text-gray-500">|</span>
+            <a 
+              href="/terms.html" 
+              target="_blank" 
+              className="text-indigo-400 hover:text-indigo-300 underline"
+            >
+              {lang === 'ES' ? 'Términos y Condiciones' : lang === 'EN' ? 'Terms and Conditions' : lang === 'DE' ? 'Nutzungsbedingungen' : 'Conditions Générales'}
+            </a>
+            <span className="text-gray-500">|</span>
+            <a 
+              href="/cookies.html" 
+              target="_blank" 
+              className="text-indigo-400 hover:text-indigo-300 underline"
+            >
+              {lang === 'ES' ? 'Política de Cookies' : lang === 'EN' ? 'Cookie Policy' : lang === 'DE' ? 'Cookie-Richtlinie' : 'Politique des Cookies'}
+            </a>
+          </div>
       </footer>
+      
+      <CookieBanner lang={lang} />
     </div>
   );
 };

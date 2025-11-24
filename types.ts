@@ -60,8 +60,48 @@ export interface PresentationStructure {
   slides: PresentationSlide[];
 }
 
-export type ViewType = 'HOME' | 'AI_ORGANIZER' | 'MERGE' | 'IMG_TO_PDF' | 'SPLIT' | 'EDIT' | 'CONVERT' | 'STUDY';
+export type ViewType = 'HOME' | 'AI_ORGANIZER' | 'MERGE' | 'IMG_TO_PDF' | 'SPLIT' | 'EDIT' | 'CONVERT' | 'STUDY' | 'EXCEL_TEMPLATE' | 'ORACLE' | 'CHAT' | 'PRICING';
 
 export type Language = 'ES' | 'EN' | 'DE' | 'FR';
 
 export type DocumentContext = 'GENERAL' | 'FINANCE' | 'LEGAL' | 'EDUCATION';
+
+// --- MIND MAP / ORACLE VISUAL TYPES ---
+
+export interface MindMapNode {
+  id: string;
+  label: string;
+  description?: string; // Detalle que se muestra al hacer clic
+  type?: 'concept' | 'person' | 'event' | 'process' | 'category'; // Tipo de nodo para estilos
+}
+
+export interface MindMapEdge {
+  id: string;
+  source: string; // ID del nodo origen
+  target: string; // ID del nodo destino
+  label: string; // Relación: "Causó", "Parte de", "Genera", etc.
+  type?: 'default' | 'causal' | 'hierarchical' | 'temporal'; // Tipo de relación
+}
+
+export interface MindMapData {
+  nodes: MindMapNode[];
+  edges: MindMapEdge[];
+  title?: string; // Título del mapa mental
+  summary?: string; // Resumen del documento
+}
+
+// --- CHAT / INTERROGATOR FEATURES ---
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+export interface ChatSession {
+  pdfText: string; // Texto completo del PDF extraído
+  messages: ChatMessage[];
+  questionCount: number; // Contador de preguntas realizadas
+  isPremium: boolean; // Si el usuario es premium
+}
