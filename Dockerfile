@@ -23,6 +23,9 @@ RUN npm run build
 # Stage 2: Production
 FROM nginx:alpine
 
+# Install wget for healthcheck (nginx:alpine doesn't include it by default)
+RUN apk add --no-cache wget
+
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
@@ -39,9 +42,10 @@ COPY --from=builder /app/public/cookies.html /usr/share/nginx/html/cookies.html
 # Expose port 80
 EXPOSE 80
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+# Health check - using /health endpoint with increased start period
+# nginx:alpine includes wget by default
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost/health || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
