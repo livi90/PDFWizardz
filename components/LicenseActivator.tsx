@@ -158,7 +158,7 @@ const LicenseActivator: React.FC<LicenseActivatorProps> = ({ lang, onActivated, 
             {t.licenseBuyLink || '¿No tienes una clave?'}
           </p>
           <a
-            href="https://gumroad.com"
+            href="https://pdfwizardzapp.gumroad.com/l/fhzoa"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full block bg-emerald-600 text-white border-2 border-emerald-500 hover:bg-emerald-500 transition-colors font-bold py-4 text-lg text-center rounded-lg shadow-lg hover:shadow-xl"

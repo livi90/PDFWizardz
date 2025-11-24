@@ -389,7 +389,7 @@ const App: React.FC = () => {
                   }`}
                >
                   <Briefcase className="w-4 h-4" />
-                  {lang === 'ES' ? '💼 B2B' : lang === 'EN' ? '💼 B2B' : lang === 'DE' ? '💼 B2B' : '💼 B2B'}
+                  {lang === 'ES' ? '💼 B2B HERRAMIENTAS IA' : lang === 'EN' ? '💼 B2B AI TOOLS' : lang === 'DE' ? '💼 B2B AI TOOLS' : '💼 B2B AI OUTILS'}
                </button>
                <button
                   onClick={() => setActiveCategory('tools')}
