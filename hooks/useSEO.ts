@@ -271,6 +271,94 @@ const seoMetadata: Record<ViewType, Record<Language, SEOMetadata>> = {
       description: 'Choisissez votre plan: Gratuit ou Premium. Débloquez des fonctionnalités avancées comme les modèles Excel, le chat illimité et le traitement de PDFs volumineux.',
       keywords: 'tarifs PDF wizardz, plan premium PDF, abonnement PDF, activer licence PDF'
     }
+  },
+  LANDING_FACTURAS_EXCEL: {
+    ES: {
+      title: 'Cómo Pasar Facturas a Excel con IA Gratis - Extraer Datos Automáticamente',
+      description: 'Pasa facturas PDF a Excel automáticamente con IA. Extrae datos de facturas (fecha, total, IVA, proveedor) y rellena plantillas Excel sin escribir. Procesa múltiples facturas a la vez. 100% gratis y privado. Sin subir archivos.',
+      keywords: 'pasar facturas a excel, extraer datos factura pdf excel, factura pdf a excel automático, rellenar excel desde factura pdf, convertir factura pdf excel gratis, extraer datos factura con ia'
+    },
+    EN: {
+      title: 'How to Convert Invoices to Excel with Free AI - Extract Data Automatically',
+      description: 'Convert invoice PDFs to Excel automatically with AI. Extract invoice data (date, total, VAT, supplier) and fill Excel templates without typing. Process multiple invoices at once. 100% free and private. No file uploads.',
+      keywords: 'convert invoices to excel, extract invoice data pdf excel, invoice pdf to excel automatic, fill excel from invoice pdf, convert invoice pdf excel free, extract invoice data with ai'
+    },
+    DE: {
+      title: 'Rechnungen zu Excel mit kostenloser KI konvertieren - Daten automatisch extrahieren',
+      description: 'Konvertieren Sie Rechnungs-PDFs automatisch mit KI zu Excel. Extrahieren Sie Rechnungsdaten (Datum, Gesamtbetrag, MwSt, Lieferant) und füllen Sie Excel-Vorlagen ohne Tippen aus. Verarbeiten Sie mehrere Rechnungen gleichzeitig. 100% kostenlos und privat.',
+      keywords: 'Rechnungen zu Excel, Rechnungsdaten PDF Excel extrahieren, Rechnung PDF zu Excel automatisch, Excel aus Rechnung PDF füllen'
+    },
+    FR: {
+      title: 'Comment Convertir Factures en Excel avec IA Gratuite - Extraire Données Automatiquement',
+      description: 'Convertissez les factures PDF en Excel automatiquement avec IA. Extrayez les données de factures (date, total, TVA, fournisseur) et remplissez les modèles Excel sans taper. Traitez plusieurs factures à la fois. 100% gratuit et privé.',
+      keywords: 'convertir factures excel, extraire données facture pdf excel, facture pdf excel automatique, remplir excel depuis facture pdf'
+    }
+  },
+  LANDING_GENERADOR_TEST: {
+    ES: {
+      title: 'Generador de Preguntas Tipo Test desde PDF Gratis - Crear Exámenes con IA',
+      description: 'Genera preguntas tipo test automáticamente desde PDFs. Crea exámenes de opción múltiple, flashcards y quizzes desde tus apuntes. Perfecto para estudiantes, opositores y profesores. 100% gratis. Procesamiento local sin subir archivos.',
+      keywords: 'generar preguntas test pdf, crear examen desde pdf, preguntas tipo test pdf, generador test pdf gratis, hacer examen desde pdf, crear quiz pdf automático, preguntas opción múltiple pdf'
+    },
+    EN: {
+      title: 'Test Question Generator from PDF Free - Create Exams with AI',
+      description: 'Generate test questions automatically from PDFs. Create multiple choice exams, flashcards and quizzes from your notes. Perfect for students, exam takers and teachers. 100% free. Local processing without uploading files.',
+      keywords: 'generate test questions pdf, create exam from pdf, test questions pdf, test generator pdf free, make exam from pdf, create quiz pdf automatic, multiple choice questions pdf'
+    },
+    DE: {
+      title: 'Testfragen-Generator aus PDF kostenlos - Prüfungen mit KI erstellen',
+      description: 'Generieren Sie automatisch Testfragen aus PDFs. Erstellen Sie Multiple-Choice-Prüfungen, Karteikarten und Quizze aus Ihren Notizen. Perfekt für Studenten und Lehrer. 100% kostenlos. Lokale Verarbeitung.',
+      keywords: 'Testfragen PDF generieren, Prüfung aus PDF erstellen, Testfragen PDF, Test Generator PDF kostenlos'
+    },
+    FR: {
+      title: 'Générateur de Questions Type Test depuis PDF Gratuit - Créer Examens avec IA',
+      description: 'Générez automatiquement des questions de test à partir de PDFs. Créez des examens à choix multiples, des cartes mémoire et des quiz à partir de vos notes. Parfait pour les étudiants et les enseignants. 100% gratuit.',
+      keywords: 'générer questions test pdf, créer examen depuis pdf, questions type test pdf, générateur test pdf gratuit'
+    }
+  },
+  LANDING_MODELO_TRIBUTARIO: {
+    ES: {
+      title: 'Rellenar Modelo Tributario desde PDF Automáticamente - Extraer Datos Fiscales con IA',
+      description: 'Rellena modelos tributarios y declaraciones fiscales automáticamente desde PDFs. Extrae datos fiscales (NIF, importes, fechas) y completa formularios Hacienda sin escribir. Procesamiento 100% local y privado. Sin subir documentos sensibles.',
+      keywords: 'rellenar modelo tributario pdf, extraer datos fiscales pdf, completar declaración fiscal pdf, rellenar formulario hacienda pdf, extraer datos tributarios pdf, automatizar modelo tributario'
+    },
+    EN: {
+      title: 'Fill Tax Model from PDF Automatically - Extract Tax Data with AI',
+      description: 'Fill tax models and tax returns automatically from PDFs. Extract tax data (tax ID, amounts, dates) and complete tax forms without typing. 100% local and private processing. No uploading sensitive documents.',
+      keywords: 'fill tax model pdf, extract tax data pdf, complete tax return pdf, fill tax form pdf, extract tax information pdf, automate tax model'
+    },
+    DE: {
+      title: 'Steuermodell aus PDF automatisch ausfüllen - Steuerdaten mit KI extrahieren',
+      description: 'Füllen Sie Steuermodelle und Steuererklärungen automatisch aus PDFs aus. Extrahieren Sie Steuerdaten (Steuer-ID, Beträge, Daten) und vervollständigen Sie Steuerformulare ohne Tippen. 100% lokale und private Verarbeitung.',
+      keywords: 'Steuermodell PDF ausfüllen, Steuerdaten PDF extrahieren, Steuererklärung PDF vervollständigen'
+    },
+    FR: {
+      title: 'Remplir Modèle Fiscal depuis PDF Automatiquement - Extraire Données Fiscales avec IA',
+      description: 'Remplissez automatiquement les modèles fiscaux et les déclarations fiscales à partir de PDFs. Extrayez les données fiscales (numéro fiscal, montants, dates) et complétez les formulaires fiscaux sans taper. Traitement 100% local et privé.',
+      keywords: 'remplir modèle fiscal pdf, extraire données fiscales pdf, compléter déclaration fiscale pdf'
+    }
+  },
+  TEMPLATE_EDITOR: {
+    ES: {
+      title: 'Editor de Plantillas Excel - La Forja de Plantillas - Insertar Variables en Excel',
+      description: 'Crea plantillas Excel con marcadores {{TOTAL}}, {{FECHA}}, etc. sin necesidad de Excel instalado. Editor visual de plantillas en el navegador. Inserta campos personalizados (variables) haciendo clic en celdas. 100% gratis y privado.',
+      keywords: 'editor plantilla excel, crear plantilla excel, insertar variables excel, editor excel online, plantilla excel con marcadores, forja de Plantillas, template editor excel'
+    },
+    EN: {
+      title: 'Excel Template Editor - The Rune Forge - Insert Variables in Excel',
+      description: 'Create Excel templates with markers {{TOTAL}}, {{DATE}}, etc. without Excel installed. Visual template editor in browser. Insert runes (variables) by clicking cells. 100% free and private.',
+      keywords: 'excel template editor, create excel template, insert variables excel, excel editor online, excel template with markers, rune forge, template editor excel'
+    },
+    DE: {
+      title: 'Excel-Vorlagen-Editor - Die Runenschmiede - Variablen in Excel einfügen',
+      description: 'Erstellen Sie Excel-Vorlagen mit Markern {{GESAMT}}, {{DATUM}} usw. ohne Excel-Installation. Visueller Vorlagen-Editor im Browser. Fügen Sie Runen (Variablen) durch Klicken auf Zellen ein. 100% kostenlos und privat.',
+      keywords: 'Excel-Vorlagen-Editor, Excel-Vorlage erstellen, Variablen Excel einfügen, Excel-Editor online, Excel-Vorlage mit Markern, Runenschmiede'
+    },
+    FR: {
+      title: 'Éditeur de Modèles Excel - La Forge des Runes - Insérer Variables dans Excel',
+      description: 'Créez des modèles Excel avec des marqueurs {{TOTAL}}, {{DATE}}, etc. sans Excel installé. Éditeur de modèles visuel dans le navigateur. Insérez des runes (variables) en cliquant sur les cellules. 100% gratuit et privé.',
+      keywords: 'éditeur modèle excel, créer modèle excel, insérer variables excel, éditeur excel en ligne, modèle excel avec marqueurs, forge des runes'
+    }
   }
 };
 

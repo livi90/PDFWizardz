@@ -9,6 +9,8 @@ import OracleView from './components/OracleView';
 import FeatureCard from './components/FeatureCard';
 import ChatSession from './components/ChatSession';
 import PricingPage from './components/PricingPage';
+import LandingPage from './components/LandingPage';
+import TemplateEditor from './components/TemplateEditor';
 import { getPremiumStatus, getFeatureAccessStatus, consumeFreeTrialUse, getPlanLimits } from './services/gumroadService';
 import { usePdfProcessor } from './hooks/usePdfProcessor';
 import { mergePdfs, imagesToPdf, splitPdf, addWatermark, convertToText, convertToImages, convertToDocx, convertToExcel, convertToPptx } from './services/pdfTools';
@@ -18,7 +20,7 @@ import { fillExcelTemplate, getTemplateKeys } from './services/excelTemplateServ
 import { getTranslation } from './services/translations';
 import { ViewType, Language, DocumentContext, StudyMaterial, MindMapData } from './types';
 import { useSEO } from './hooks/useSEO';
-import { Upload, Wand2, Download, Trash2, FileText, Layers, Image as ImageIcon, Sparkles, ArrowRight, Scissors, PenTool, Type, FileStack, Repeat, FileSpreadsheet, Briefcase, GraduationCap, Scale, BookOpen, BrainCircuit, Presentation, Lock } from 'lucide-react';
+import { Upload, Wand2, Download, Trash2, FileText, Layers, Image as ImageIcon, Sparkles, ArrowRight, Scissors, PenTool, Type, FileStack, Repeat, FileSpreadsheet, Briefcase, GraduationCap, Scale, BookOpen, BrainCircuit, Presentation, Lock, Calculator } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('HOME');
@@ -441,6 +443,102 @@ const App: React.FC = () => {
          </div>
          </div>
 
+      {/* SEO Landing Pages Section - B2B Specific Solutions */}
+      <div className="w-full bg-gradient-to-b from-gray-900 to-gray-800 border-b-4 border-black py-12 mb-8">
+         <div className="max-w-6xl mx-auto px-4">
+            <div className="text-center mb-8">
+               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 pixel-font-header">
+                  {lang === 'ES' ? '🎯 Soluciones B2B Específicas' : lang === 'EN' ? '🎯 Specific B2B Solutions' : lang === 'DE' ? '🎯 Spezifische B2B-Lösungen' : '🎯 Solutions B2B Spécifiques'}
+               </h2>
+               <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+                  {lang === 'ES' 
+                     ? 'Herramientas especializadas para casos de uso empresariales específicos'
+                     : lang === 'EN'
+                     ? 'Specialized tools for specific business use cases'
+                     : lang === 'DE'
+                     ? 'Spezialisierte Tools für spezifische Geschäftsanwendungsfälle'
+                     : 'Outils spécialisés pour des cas d\'utilisation métier spécifiques'}
+               </p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+               {/* Landing Page 1: Facturas a Excel */}
+               <div 
+                  onClick={() => setCurrentView('LANDING_FACTURAS_EXCEL')}
+                  className="bg-emerald-900/30 border-4 border-emerald-500 rounded-lg p-6 cursor-pointer hover:bg-emerald-900/50 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(16,185,129,0.5)]"
+               >
+                  <div className="flex items-center gap-3 mb-4">
+                     <FileSpreadsheet className="w-8 h-8 text-emerald-400" />
+                     <h3 className="text-xl font-bold text-emerald-300">
+                        {lang === 'ES' ? 'Facturas a Excel' : lang === 'EN' ? 'Invoices to Excel' : lang === 'DE' ? 'Rechnungen zu Excel' : 'Factures vers Excel'}
+                     </h3>
+                  </div>
+                  <p className="text-gray-300 mb-4">
+                     {lang === 'ES' 
+                        ? 'Cómo pasar facturas a Excel con IA gratis. Extrae datos automáticamente.'
+                        : lang === 'EN'
+                        ? 'How to convert invoices to Excel with free AI. Extract data automatically.'
+                        : lang === 'DE'
+                        ? 'Rechnungen zu Excel mit kostenloser KI konvertieren. Daten automatisch extrahieren.'
+                        : 'Comment convertir factures en Excel avec IA gratuite. Extraire données automatiquement.'}
+                  </p>
+                  <div className="text-emerald-400 font-bold text-sm flex items-center gap-2">
+                     {lang === 'ES' ? 'Ver solución →' : lang === 'EN' ? 'View solution →' : lang === 'DE' ? 'Lösung ansehen →' : 'Voir solution →'}
+                  </div>
+               </div>
+
+               {/* Landing Page 2: Generador de Test */}
+               <div 
+                  onClick={() => setCurrentView('LANDING_GENERADOR_TEST')}
+                  className="bg-indigo-900/30 border-4 border-indigo-500 rounded-lg p-6 cursor-pointer hover:bg-indigo-900/50 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(99,102,241,0.5)]"
+               >
+                  <div className="flex items-center gap-3 mb-4">
+                     <FileText className="w-8 h-8 text-indigo-400" />
+                     <h3 className="text-xl font-bold text-indigo-300">
+                        {lang === 'ES' ? 'Generador de Test' : lang === 'EN' ? 'Test Generator' : lang === 'DE' ? 'Test-Generator' : 'Générateur de Test'}
+                     </h3>
+                  </div>
+                  <p className="text-gray-300 mb-4">
+                     {lang === 'ES'
+                        ? 'Generador de preguntas tipo test desde PDF. Crea exámenes con IA.'
+                        : lang === 'EN'
+                        ? 'Test question generator from PDF. Create exams with AI.'
+                        : lang === 'DE'
+                        ? 'Testfragen-Generator aus PDF. Erstellen Sie Prüfungen mit KI.'
+                        : 'Générateur de questions type test depuis PDF. Créez examens avec IA.'}
+                  </p>
+                  <div className="text-indigo-400 font-bold text-sm flex items-center gap-2">
+                     {lang === 'ES' ? 'Ver solución →' : lang === 'EN' ? 'View solution →' : lang === 'DE' ? 'Lösung ansehen →' : 'Voir solution →'}
+                  </div>
+               </div>
+
+               {/* Landing Page 3: Modelo Tributario */}
+               <div 
+                  onClick={() => setCurrentView('LANDING_MODELO_TRIBUTARIO')}
+                  className="bg-purple-900/30 border-4 border-purple-500 rounded-lg p-6 cursor-pointer hover:bg-purple-900/50 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(168,85,247,0.5)]"
+               >
+                  <div className="flex items-center gap-3 mb-4">
+                     <Calculator className="w-8 h-8 text-purple-400" />
+                     <h3 className="text-xl font-bold text-purple-300">
+                        {lang === 'ES' ? 'Modelo Tributario' : lang === 'EN' ? 'Tax Model' : lang === 'DE' ? 'Steuermodell' : 'Modèle Fiscal'}
+                     </h3>
+                  </div>
+                  <p className="text-gray-300 mb-4">
+                     {lang === 'ES'
+                        ? 'Rellenar modelo tributario desde PDF automáticamente. Extrae datos fiscales.'
+                        : lang === 'EN'
+                        ? 'Fill tax model from PDF automatically. Extract tax data.'
+                        : lang === 'DE'
+                        ? 'Steuermodell aus PDF automatisch ausfüllen. Steuerdaten extrahieren.'
+                        : 'Remplir modèle fiscal depuis PDF automatiquement. Extraire données fiscales.'}
+                  </p>
+                  <div className="text-purple-400 font-bold text-sm flex items-center gap-2">
+                     {lang === 'ES' ? 'Ver solución →' : lang === 'EN' ? 'View solution →' : lang === 'DE' ? 'Lösung ansehen →' : 'Voir solution →'}
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+
       {/* Feature Grid - Organized by Categories */}
       <div id="tools" className="max-w-6xl mx-auto px-4 pb-20">
          
@@ -461,6 +559,20 @@ const App: React.FC = () => {
                      tags="Extraer datos • Rellenar plantillas • Múltiples facturas"
                      borderColor="border-t-emerald-500"
                      hoverShadow="8px_8px_0px_0px_rgba(16,185,129,0.5)"
+                     lang={lang}
+                  />
+                  <FeatureCard
+                     title={t.templateEditorTitle}
+                     description={t.templateEditorDesc}
+                     shortDescription="Editor de plantillas Excel - Inserta runas (variables) sin Excel instalado."
+                     onClick={() => setCurrentView('TEMPLATE_EDITOR')}
+                     icon={Sparkles}
+                     color="bg-purple-900"
+                     badge="NEW"
+                     badgeColor="bg-purple-500"
+                     tags="Editor plantillas • Insertar variables • Sin Excel"
+                     borderColor="border-t-purple-500"
+                     hoverShadow="8px_8px_0px_0px_rgba(168,85,247,0.5)"
                      lang={lang}
                   />
                   <FeatureCard
@@ -538,6 +650,20 @@ const App: React.FC = () => {
                            tags="Extraer datos • Rellenar plantillas • Múltiples facturas"
                            borderColor="border-t-emerald-500"
                            hoverShadow="8px_8px_0px_0px_rgba(16,185,129,0.5)"
+                           lang={lang}
+                        />
+                        <FeatureCard
+                           title={t.templateEditorTitle}
+                           description={t.templateEditorDesc}
+                           shortDescription="Editor de plantillas Excel - Inserta runas (variables) sin Excel instalado."
+                           onClick={() => setCurrentView('TEMPLATE_EDITOR')}
+                           icon={Sparkles}
+                           color="bg-purple-900"
+                           badge="NEW"
+                           badgeColor="bg-purple-500"
+                           tags="Editor plantillas • Insertar variables • Sin Excel"
+                           borderColor="border-t-purple-500"
+                           hoverShadow="8px_8px_0px_0px_rgba(168,85,247,0.5)"
                            lang={lang}
                         />
                         <FeatureCard
@@ -1340,6 +1466,272 @@ const App: React.FC = () => {
                     setCurrentView('HOME');
                 }}
                 onGoToHome={() => setCurrentView('HOME')}
+             />
+         )}
+
+         {currentView === 'TEMPLATE_EDITOR' && (
+             <TemplateEditor
+                lang={lang}
+                onGoToHome={() => setCurrentView('HOME')}
+             />
+         )}
+
+         {/* Landing Pages SEO */}
+         {currentView === 'LANDING_FACTURAS_EXCEL' && (
+             <LandingPage
+                lang={lang}
+                viewType="LANDING_FACTURAS_EXCEL"
+                title={lang === 'ES' ? 'Cómo Pasar Facturas a Excel con IA Gratis' : lang === 'EN' ? 'How to Convert Invoices to Excel with Free AI' : lang === 'DE' ? 'Rechnungen zu Excel mit kostenloser KI konvertieren' : 'Comment Convertir Factures en Excel avec IA Gratuite'}
+                subtitle={lang === 'ES' ? 'Extrae Datos de Facturas Automáticamente' : lang === 'EN' ? 'Extract Invoice Data Automatically' : lang === 'DE' ? 'Rechnungsdaten automatisch extrahieren' : 'Extraire Données de Factures Automatiquement'}
+                description={lang === 'ES' 
+                    ? 'Pasa facturas PDF a Excel automáticamente con IA. Extrae fecha, total, IVA, proveedor y más datos sin escribir. Procesa múltiples facturas a la vez. 100% gratis y privado. Sin subir archivos.'
+                    : lang === 'EN'
+                    ? 'Convert invoice PDFs to Excel automatically with AI. Extract date, total, VAT, supplier and more data without typing. Process multiple invoices at once. 100% free and private. No file uploads.'
+                    : lang === 'DE'
+                    ? 'Konvertieren Sie Rechnungs-PDFs automatisch mit KI zu Excel. Extrahieren Sie Datum, Gesamtbetrag, MwSt, Lieferant und weitere Daten ohne Tippen. Verarbeiten Sie mehrere Rechnungen gleichzeitig. 100% kostenlos und privat.'
+                    : 'Convertissez les factures PDF en Excel automatiquement avec IA. Extrayez la date, le total, la TVA, le fournisseur et plus de données sans taper. Traitez plusieurs factures à la fois. 100% gratuit et privé.'}
+                mainFeature={lang === 'ES' 
+                    ? 'Extracción Inteligente de Datos de Facturas'
+                    : lang === 'EN'
+                    ? 'Smart Invoice Data Extraction'
+                    : lang === 'DE'
+                    ? 'Intelligente Rechnungsdatenextraktion'
+                    : 'Extraction Intelligente de Données de Factures'}
+                features={lang === 'ES' ? [
+                    'Extrae fecha, total, IVA y proveedor automáticamente',
+                    'Rellena plantillas Excel sin escribir',
+                    'Procesa múltiples facturas a la vez',
+                    '100% gratis y privado',
+                    'Sin subir archivos a internet',
+                    'Reconoce diferentes formatos de factura'
+                ] : lang === 'EN' ? [
+                    'Extract date, total, VAT and supplier automatically',
+                    'Fill Excel templates without typing',
+                    'Process multiple invoices at once',
+                    '100% free and private',
+                    'No uploading files to internet',
+                    'Recognizes different invoice formats'
+                ] : lang === 'DE' ? [
+                    'Datum, Gesamtbetrag, MwSt und Lieferant automatisch extrahieren',
+                    'Excel-Vorlagen ohne Tippen ausfüllen',
+                    'Mehrere Rechnungen gleichzeitig verarbeiten',
+                    '100% kostenlos und privat',
+                    'Keine Datei-Uploads ins Internet',
+                    'Erkennt verschiedene Rechnungsformate'
+                ] : [
+                    'Extraire date, total, TVA et fournisseur automatiquement',
+                    'Remplir modèles Excel sans taper',
+                    'Traiter plusieurs factures à la fois',
+                    '100% gratuit et privé',
+                    'Pas de téléchargement de fichiers',
+                    'Reconnaît différents formats de facture'
+                ]}
+                benefits={lang === 'ES' ? [
+                    'Ahorra horas de trabajo manual copiando datos',
+                    'Elimina errores de transcripción',
+                    'Procesa cientos de facturas en minutos',
+                    'Privacidad total: tus documentos nunca salen de tu PC',
+                    'Compatible con cualquier formato de factura',
+                    'Resultados instantáneos sin esperas'
+                ] : lang === 'EN' ? [
+                    'Save hours of manual work copying data',
+                    'Eliminate transcription errors',
+                    'Process hundreds of invoices in minutes',
+                    'Total privacy: your documents never leave your PC',
+                    'Compatible with any invoice format',
+                    'Instant results without waiting'
+                ] : lang === 'DE' ? [
+                    'Sparen Sie Stunden manueller Arbeit beim Kopieren von Daten',
+                    'Beseitigen Sie Transkriptionsfehler',
+                    'Verarbeiten Sie Hunderte von Rechnungen in Minuten',
+                    'Vollständige Privatsphäre: Ihre Dokumente verlassen nie Ihren PC',
+                    'Kompatibel mit jedem Rechnungsformat',
+                    'Sofortige Ergebnisse ohne Warten'
+                ] : [
+                    'Économisez des heures de travail manuel de copie de données',
+                    'Éliminez les erreurs de transcription',
+                    'Traitez des centaines de factures en minutes',
+                    'Confidentialité totale: vos documents ne quittent jamais votre PC',
+                    'Compatible avec tout format de facture',
+                    'Résultats instantanés sans attente'
+                ]}
+                ctaText={lang === 'ES' ? 'PROBAR GRATIS AHORA' : lang === 'EN' ? 'TRY FREE NOW' : lang === 'DE' ? 'JETZT KOSTENLOS TESTEN' : 'ESSAYER GRATUITEMENT'}
+                ctaAction={() => setCurrentView('EXCEL_TEMPLATE')}
+                onGoToHome={() => setCurrentView('HOME')}
+                icon={<FileSpreadsheet className="w-10 h-10 text-emerald-400" />}
+                color="emerald"
+             />
+         )}
+
+         {currentView === 'LANDING_GENERADOR_TEST' && (
+             <LandingPage
+                lang={lang}
+                viewType="LANDING_GENERADOR_TEST"
+                title={lang === 'ES' ? 'Generador de Preguntas Tipo Test desde PDF Gratis' : lang === 'EN' ? 'Test Question Generator from PDF Free' : lang === 'DE' ? 'Testfragen-Generator aus PDF kostenlos' : 'Générateur de Questions Type Test depuis PDF Gratuit'}
+                subtitle={lang === 'ES' ? 'Crea Exámenes con IA' : lang === 'EN' ? 'Create Exams with AI' : lang === 'DE' ? 'Prüfungen mit KI erstellen' : 'Créer Examens avec IA'}
+                description={lang === 'ES'
+                    ? 'Genera preguntas tipo test automáticamente desde PDFs. Crea exámenes de opción múltiple, flashcards y quizzes desde tus apuntes. Perfecto para estudiantes, opositores y profesores. 100% gratis.'
+                    : lang === 'EN'
+                    ? 'Generate test questions automatically from PDFs. Create multiple choice exams, flashcards and quizzes from your notes. Perfect for students, exam takers and teachers. 100% free.'
+                    : lang === 'DE'
+                    ? 'Generieren Sie automatisch Testfragen aus PDFs. Erstellen Sie Multiple-Choice-Prüfungen, Karteikarten und Quizze aus Ihren Notizen. Perfekt für Studenten und Lehrer. 100% kostenlos.'
+                    : 'Générez automatiquement des questions de test à partir de PDFs. Créez des examens à choix multiples, des cartes mémoire et des quiz à partir de vos notes. Parfait pour les étudiants et les enseignants. 100% gratuit.'}
+                mainFeature={lang === 'ES'
+                    ? 'Generación Automática de Preguntas de Examen'
+                    : lang === 'EN'
+                    ? 'Automatic Exam Question Generation'
+                    : lang === 'DE'
+                    ? 'Automatische Prüfungsfragenerstellung'
+                    : 'Génération Automatique de Questions d\'Examen'}
+                features={lang === 'ES' ? [
+                    'Genera preguntas de opción múltiple automáticamente',
+                    'Crea flashcards para memorización',
+                    'Genera quizzes interactivos',
+                    'Extrae conceptos clave del PDF',
+                    '100% gratis sin límites',
+                    'Procesamiento local privado'
+                ] : lang === 'EN' ? [
+                    'Generate multiple choice questions automatically',
+                    'Create flashcards for memorization',
+                    'Generate interactive quizzes',
+                    'Extract key concepts from PDF',
+                    '100% free without limits',
+                    'Private local processing'
+                ] : lang === 'DE' ? [
+                    'Generieren Sie automatisch Multiple-Choice-Fragen',
+                    'Erstellen Sie Karteikarten zum Auswendiglernen',
+                    'Generieren Sie interaktive Quizze',
+                    'Extrahieren Sie Schlüsselkonzepte aus PDF',
+                    '100% kostenlos ohne Limits',
+                    'Private lokale Verarbeitung'
+                ] : [
+                    'Générez automatiquement des questions à choix multiples',
+                    'Créez des cartes mémoire pour la mémorisation',
+                    'Générez des quiz interactifs',
+                    'Extrayez les concepts clés du PDF',
+                    '100% gratuit sans limites',
+                    'Traitement local privé'
+                ]}
+                benefits={lang === 'ES' ? [
+                    'Ahorra horas creando preguntas manualmente',
+                    'Mejora tu estudio con material personalizado',
+                    'Genera exámenes de práctica ilimitados',
+                    'Perfecto para opositores y estudiantes',
+                    'Adapta el nivel de dificultad',
+                    'Exporta tus exámenes y flashcards'
+                ] : lang === 'EN' ? [
+                    'Save hours creating questions manually',
+                    'Improve your study with personalized material',
+                    'Generate unlimited practice exams',
+                    'Perfect for exam takers and students',
+                    'Adjust difficulty level',
+                    'Export your exams and flashcards'
+                ] : lang === 'DE' ? [
+                    'Sparen Sie Stunden beim manuellen Erstellen von Fragen',
+                    'Verbessern Sie Ihr Studium mit personalisiertem Material',
+                    'Generieren Sie unbegrenzte Übungsprüfungen',
+                    'Perfekt für Prüflinge und Studenten',
+                    'Passen Sie den Schwierigkeitsgrad an',
+                    'Exportieren Sie Ihre Prüfungen und Karteikarten'
+                ] : [
+                    'Économisez des heures à créer des questions manuellement',
+                    'Améliorez votre étude avec du matériel personnalisé',
+                    'Générez des examens de pratique illimités',
+                    'Parfait pour les candidats et les étudiants',
+                    'Ajustez le niveau de difficulté',
+                    'Exportez vos examens et cartes mémoire'
+                ]}
+                ctaText={lang === 'ES' ? 'CREAR MI PRIMER EXAMEN' : lang === 'EN' ? 'CREATE MY FIRST EXAM' : lang === 'DE' ? 'MEINE ERSTE PRÜFUNG ERSTELLEN' : 'CRÉER MON PREMIER EXAMEN'}
+                ctaAction={() => setCurrentView('STUDY')}
+                onGoToHome={() => setCurrentView('HOME')}
+                icon={<FileText className="w-10 h-10 text-indigo-400" />}
+                color="indigo"
+             />
+         )}
+
+         {currentView === 'LANDING_MODELO_TRIBUTARIO' && (
+             <LandingPage
+                lang={lang}
+                viewType="LANDING_MODELO_TRIBUTARIO"
+                title={lang === 'ES' ? 'Rellenar Modelo Tributario desde PDF Automáticamente' : lang === 'EN' ? 'Fill Tax Model from PDF Automatically' : lang === 'DE' ? 'Steuermodell aus PDF automatisch ausfüllen' : 'Remplir Modèle Fiscal depuis PDF Automatiquement'}
+                subtitle={lang === 'ES' ? 'Extraer Datos Fiscales con IA' : lang === 'EN' ? 'Extract Tax Data with AI' : lang === 'DE' ? 'Steuerdaten mit KI extrahieren' : 'Extraire Données Fiscales avec IA'}
+                description={lang === 'ES'
+                    ? 'Rellena modelos tributarios y declaraciones fiscales automáticamente desde PDFs. Extrae datos fiscales (NIF, importes, fechas) y completa formularios Hacienda sin escribir. Procesamiento 100% local y privado.'
+                    : lang === 'EN'
+                    ? 'Fill tax models and tax returns automatically from PDFs. Extract tax data (tax ID, amounts, dates) and complete tax forms without typing. 100% local and private processing.'
+                    : lang === 'DE'
+                    ? 'Füllen Sie Steuermodelle und Steuererklärungen automatisch aus PDFs aus. Extrahieren Sie Steuerdaten (Steuer-ID, Beträge, Daten) und vervollständigen Sie Steuerformulare ohne Tippen. 100% lokale und private Verarbeitung.'
+                    : 'Remplissez les modèles fiscaux et les déclarations fiscales automatiquement à partir de PDFs. Extrayez les données fiscales (numéro fiscal, montants, dates) et complétez les formulaires fiscaux sans taper. Traitement 100% local et privé.'}
+                mainFeature={lang === 'ES'
+                    ? 'Automatización de Formularios Fiscales'
+                    : lang === 'EN'
+                    ? 'Tax Form Automation'
+                    : lang === 'DE'
+                    ? 'Automatisierung von Steuerformularen'
+                    : 'Automatisation des Formulaires Fiscaux'}
+                features={lang === 'ES' ? [
+                    'Extrae NIF, importes y fechas automáticamente',
+                    'Rellena modelos tributarios sin escribir',
+                    'Completa declaraciones fiscales',
+                    'Procesa múltiples documentos a la vez',
+                    '100% privado y seguro',
+                    'Sin subir documentos sensibles'
+                ] : lang === 'EN' ? [
+                    'Extract tax ID, amounts and dates automatically',
+                    'Fill tax models without typing',
+                    'Complete tax returns',
+                    'Process multiple documents at once',
+                    '100% private and secure',
+                    'No uploading sensitive documents'
+                ] : lang === 'DE' ? [
+                    'Steuer-ID, Beträge und Daten automatisch extrahieren',
+                    'Steuermodelle ohne Tippen ausfüllen',
+                    'Steuererklärungen vervollständigen',
+                    'Mehrere Dokumente gleichzeitig verarbeiten',
+                    '100% privat und sicher',
+                    'Keine Uploads sensibler Dokumente'
+                ] : [
+                    'Extraire numéro fiscal, montants et dates automatiquement',
+                    'Remplir modèles fiscaux sans taper',
+                    'Compléter déclarations fiscales',
+                    'Traiter plusieurs documents à la fois',
+                    '100% privé et sécurisé',
+                    'Pas de téléchargement de documents sensibles'
+                ]}
+                benefits={lang === 'ES' ? [
+                    'Ahorra días completando formularios manualmente',
+                    'Elimina errores de transcripción fiscal',
+                    'Cumple con plazos de forma eficiente',
+                    'Privacidad total: documentos fiscales nunca salen de tu PC',
+                    'Compatible con modelos de Hacienda',
+                    'Resultados precisos y verificables'
+                ] : lang === 'EN' ? [
+                    'Save days completing forms manually',
+                    'Eliminate tax transcription errors',
+                    'Meet deadlines efficiently',
+                    'Total privacy: tax documents never leave your PC',
+                    'Compatible with tax office models',
+                    'Accurate and verifiable results'
+                ] : lang === 'DE' ? [
+                    'Sparen Sie Tage beim manuellen Ausfüllen von Formularen',
+                    'Beseitigen Sie Steuertranskriptionsfehler',
+                    'Erfüllen Sie Fristen effizient',
+                    'Vollständige Privatsphäre: Steuerdokumente verlassen nie Ihren PC',
+                    'Kompatibel mit Finanzamt-Modellen',
+                    'Präzise und überprüfbare Ergebnisse'
+                ] : [
+                    'Économisez des jours à remplir des formulaires manuellement',
+                    'Éliminez les erreurs de transcription fiscale',
+                    'Respectez les délais efficacement',
+                    'Confidentialité totale: les documents fiscaux ne quittent jamais votre PC',
+                    'Compatible avec les modèles du fisc',
+                    'Résultats précis et vérifiables'
+                ]}
+                ctaText={lang === 'ES' ? 'AUTOMATIZAR MI MODELO TRIBUTARIO' : lang === 'EN' ? 'AUTOMATE MY TAX MODEL' : lang === 'DE' ? 'MEIN STEUERMODELL AUTOMATISIEREN' : 'AUTOMATISER MON MODÈLE FISCAL'}
+                ctaAction={() => setCurrentView('EXCEL_TEMPLATE')}
+                onGoToHome={() => setCurrentView('HOME')}
+                icon={<Calculator className="w-10 h-10 text-purple-400" />}
+                color="purple"
              />
          )}
 

@@ -160,14 +160,24 @@ const LicenseActivator: React.FC<LicenseActivatorProps> = ({ lang, onActivated, 
           <p className="text-base text-gray-400 text-center mb-3">
             {t.licenseBuyLink || '¿No tienes una clave?'}
           </p>
-          <a
-            href="https://pdfwizardzapp.gumroad.com/l/fhzoa"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full block bg-emerald-600 text-white border-2 border-emerald-500 hover:bg-emerald-500 transition-colors font-bold py-4 text-lg text-center rounded-lg shadow-lg hover:shadow-xl"
-          >
-            💳 {t.licenseBuyNow || 'COMPRA UNA AQUÍ'}
-          </a>
+          <div className="space-y-2">
+            <a
+              href="https://pdfwizardzapp.gumroad.com/l/fhzoa"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full block bg-indigo-600 text-white border-2 border-indigo-500 hover:bg-indigo-500 transition-colors font-bold py-3 text-base text-center rounded-lg"
+            >
+              💳 {t.licenseBuyPremium || 'COMPRAR PREMIUM (€2)'}
+            </a>
+            <a
+              href="https://pdfwizardzapp.gumroad.com/l/jdoam"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full block bg-purple-600 text-white border-2 border-purple-500 hover:bg-purple-500 transition-colors font-bold py-3 text-base text-center rounded-lg"
+            >
+              ⭐ {t.licenseBuyPlatinum || 'COMPRAR PLATINUM+ (€8)'}
+            </a>
+          </div>
         </div>
       </div>
     </div>

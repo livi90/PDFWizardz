@@ -175,13 +175,22 @@ const PricingPage: React.FC<PricingPageProps> = ({
                 {t.pricingAlreadyPremium || 'YA ERES PREMIUM'}
               </button>
             ) : (
-              <button
-                onClick={() => setShowActivator(true)}
-                className="w-full bg-indigo-600 text-white border-2 border-indigo-500 hover:bg-indigo-500 transition-colors font-bold py-4 text-lg flex items-center justify-center gap-2"
-              >
-                <Sparkles className="w-6 h-6" />
-                {t.pricingActivateLicense || 'ACTIVAR LICENCIA'}
-              </button>
+              <>
+                <a
+                  href="https://pdfwizardzapp.gumroad.com/l/fhzoa"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full block bg-indigo-600 text-white border-2 border-indigo-500 hover:bg-indigo-500 transition-colors font-bold py-4 text-lg text-center rounded-lg mb-2"
+                >
+                  💳 {t.pricingBuyPremium || 'COMPRAR PREMIUM (€2)'}
+                </a>
+                <button
+                  onClick={() => setShowActivator(true)}
+                  className="w-full bg-gray-700 text-white border-2 border-gray-600 hover:bg-gray-600 transition-colors font-bold py-3 text-base"
+                >
+                  {t.pricingActivateLicense || 'ACTIVAR LICENCIA'}
+                </button>
+              </>
             )}
           </div>
 
@@ -235,13 +244,23 @@ const PricingPage: React.FC<PricingPageProps> = ({
                 {t.pricingAlreadyPlatinum || 'YA ERES PLATINUM+'}
               </button>
             ) : (
-              <button
-                onClick={() => setShowActivator(true)}
-                className="w-full bg-purple-600 text-white border-2 border-purple-500 hover:bg-purple-500 transition-colors font-bold py-4 text-lg flex items-center justify-center gap-2"
-              >
-                <Star className="w-6 h-6" />
-                {t.pricingActivateLicense || 'ACTIVAR LICENCIA'}
-              </button>
+              <>
+                <a
+                  href="https://pdfwizardzapp.gumroad.com/l/jdoam"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full block bg-purple-600 text-white border-2 border-purple-500 hover:bg-purple-500 transition-colors font-bold py-4 text-lg text-center rounded-lg mb-2 flex items-center justify-center gap-2"
+                >
+                  <Star className="w-6 h-6" />
+                  💳 {t.pricingBuyPlatinum || 'COMPRAR PLATINUM+ (€8)'}
+                </a>
+                <button
+                  onClick={() => setShowActivator(true)}
+                  className="w-full bg-gray-700 text-white border-2 border-gray-600 hover:bg-gray-600 transition-colors font-bold py-3 text-base"
+                >
+                  {t.pricingActivateLicense || 'ACTIVAR LICENCIA'}
+                </button>
+              </>
             )}
           </div>
         </div>

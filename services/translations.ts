@@ -34,6 +34,8 @@ export const translations = {
     chatDesc: 'Invoca al espíritu del documento. Haz preguntas cortas sobre el contenido del PDF y obtén respuestas cortas pero precisas basadas en el texto completo. Límite: 3 preguntas por documento para usuarios (gratis) e ilimitadas para usuarios premiun.',
     excelTemplateTutorial: 'TUTORIAL: Cómo preparar tu plantilla',
     excelTemplateTutorialDesc: 'Si vas a procesar 6 facturas, tu plantilla Excel debe tener 6 filas con los marcadores(vease el ejemplo 2). Cada fila será reemplazada con los datos de una factura.',
+    templateEditorTitle: 'LA FORJA DE PLANTILLAS',
+    templateEditorDesc: 'Editor de Plantillas Excel - Inserta Runas (Variables) en tus Celdas. Carga tu Excel, haz clic en una celda y luego en una runa para insertar {{TOTAL}}, {{FECHA}}, etc. Sin necesidad de Excel instalado.',
     
     contextLabel: 'Esencia del Documento:',
     ctxGeneral: 'General',
@@ -140,6 +142,10 @@ export const translations = {
     pricingPlatinumPlan: 'Plan Platinum+',
     pricingPlatinumDesc: 'Máximo rendimiento',
     pricingAlreadyPlatinum: 'YA ERES PLATINUM+',
+    pricingBuyPremium: 'COMPRAR PREMIUM (€2)',
+    pricingBuyPlatinum: 'COMPRAR PLATINUM+ (€8)',
+    licenseBuyPremium: 'COMPRAR PREMIUM (€2)',
+    licenseBuyPlatinum: 'COMPRAR PLATINUM+ (€8)',
     
     pricingChatQuestions: 'Preguntas en Chat',
     pricingTokens: 'Tokens por respuesta',
@@ -180,6 +186,8 @@ export const translations = {
     chatDesc: 'Invoke the document spirit. Ask questions about the PDF content and get precise answers based on the full text. Limit: 3 questions per document (free).',
     excelTemplateTutorial: 'TUTORIAL: How to prepare your template',
     excelTemplateTutorialDesc: 'If you are processing 6 invoices, your Excel template must have 6 rows with markers. Each row will be replaced with data from one invoice.',
+    templateEditorTitle: 'THE RUNE FORGE',
+    templateEditorDesc: 'Excel Template Editor - Insert Runes (Variables) in your Cells. Upload your Excel, click on a cell then on a rune to insert {{TOTAL}}, {{DATE}}, etc. No Excel installation needed.',
     
     contextLabel: 'Document Essence:',
     ctxGeneral: 'General',
@@ -285,6 +293,10 @@ export const translations = {
     pricingPlatinumPlan: 'Platinum+ Plan',
     pricingPlatinumDesc: 'Maximum performance',
     pricingAlreadyPlatinum: 'YOU ARE ALREADY PLATINUM+',
+    pricingBuyPremium: 'BUY PREMIUM (€2)',
+    pricingBuyPlatinum: 'BUY PLATINUM+ (€8)',
+    licenseBuyPremium: 'BUY PREMIUM (€2)',
+    licenseBuyPlatinum: 'BUY PLATINUM+ (€8)',
     
     pricingChatQuestions: 'Chat Questions',
     pricingTokens: 'Tokens per response',
@@ -325,6 +337,8 @@ export const translations = {
     chatDesc: 'Beschwöre den Geist des Dokuments. Stelle Fragen zum PDF-Inhalt und erhalte präzise Antworten basierend auf dem vollständigen Text. Limit: 3 Fragen pro Dokument (kostenlos).',
     excelTemplateTutorial: 'TUTORIAL: So bereitest du deine Vorlage vor',
     excelTemplateTutorialDesc: 'Wenn du 6 Rechnungen verarbeitest, muss deine Excel-Vorlage 6 Zeilen mit Markern haben. Jede Zeile wird mit Daten aus einer Rechnung ersetzt.',
+    templateEditorTitle: 'DIE RUNENSCHMIEDE',
+    templateEditorDesc: 'Excel-Vorlagen-Editor - Fügen Sie Runen (Variablen) in Ihre Zellen ein. Laden Sie Ihre Excel-Datei hoch, klicken Sie auf eine Zelle und dann auf eine Rune, um {{GESAMT}}, {{DATUM}} usw. einzufügen. Keine Excel-Installation erforderlich.',
     
     contextLabel: 'Dokumentenessenz:',
     ctxGeneral: 'Allgemein',
@@ -430,6 +444,10 @@ export const translations = {
     pricingPlatinumPlan: 'Platinum+ Plan',
     pricingPlatinumDesc: 'Maximale Leistung',
     pricingAlreadyPlatinum: 'DU BIST BEREITS PLATINUM+',
+    pricingBuyPremium: 'PREMIUM KAUFEN (€2)',
+    pricingBuyPlatinum: 'PLATINUM+ KAUFEN (€8)',
+    licenseBuyPremium: 'PREMIUM KAUFEN (€2)',
+    licenseBuyPlatinum: 'PLATINUM+ KAUFEN (€8)',
     
     pricingChatQuestions: 'Chat-Fragen',
     pricingTokens: 'Tokens pro Antwort',
@@ -470,6 +488,10 @@ export const translations = {
     chatDesc: 'Invoquez l\'esprit du document. Posez des questions sur le contenu du PDF et obtenez des réponses précises basées sur le texte complet. Limite: 3 questions par document (gratuit).',
     excelTemplateTutorial: 'TUTORIEL: Comment préparer votre modèle',
     excelTemplateTutorialDesc: 'Si vous traitez 6 factures, votre modèle Excel doit avoir 6 lignes avec des marqueurs. Chaque ligne sera remplacée par les données d\'une facture.',
+    templateEditorTitle: 'LA FORGE DES RUNES',
+    templateEditorDesc: 'Éditeur de Modèles Excel - Insérer des Runes (Variables) dans vos Cellules. Téléchargez votre Excel, cliquez sur une cellule puis sur une rune pour insérer {{TOTAL}}, {{DATE}}, etc. Aucune installation Excel requise.',
+    templateEditorTitle: 'LA FORGE DES RUNES',
+    templateEditorDesc: 'Éditeur de Modèles Excel - Insérer des Runes (Variables) dans vos Cellules. Téléchargez votre Excel, cliquez sur une cellule puis sur une rune pour insérer {{TOTAL}}, {{DATE}}, etc. Aucune installation Excel requise.',
     
     contextLabel: 'Essence du Document:',
     ctxGeneral: 'Général',
@@ -575,6 +597,10 @@ export const translations = {
     pricingPlatinumPlan: 'Plan Platinum+',
     pricingPlatinumDesc: 'Performance maximale',
     pricingAlreadyPlatinum: 'VOUS ÊTES DÉJÀ PLATINUM+',
+    pricingBuyPremium: 'ACHETER PREMIUM (€2)',
+    pricingBuyPlatinum: 'ACHETER PLATINUM+ (€8)',
+    licenseBuyPremium: 'ACHETER PREMIUM (€2)',
+    licenseBuyPlatinum: 'ACHETER PLATINUM+ (€8)',
     
     pricingChatQuestions: 'Questions dans le Chat',
     pricingTokens: 'Tokens par réponse',
