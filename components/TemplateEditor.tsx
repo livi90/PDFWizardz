@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { Language } from '../types';
 import { getTranslation } from '../services/translations';
-import { ArrowRight, Download, Upload, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Download, Upload, Sparkles, X, Search, Trash2, FileText, ZoomIn, ZoomOut, List, ChevronLeft, ChevronRight } from 'lucide-react';
 import saveAs from 'file-saver';
 
 interface TemplateEditorProps {
@@ -25,8 +25,16 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
   const [sheetName, setSheetName] = useState<string>('');
   const [cells, setCells] = useState<CellData[][]>([]);
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ row: number; col: number } | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [sheetNames, setSheetNames] = useState<string[]>([]);
+  const [currentSheetIndex, setCurrentSheetIndex] = useState<number>(0);
+  const [zoom, setZoom] = useState<number>(100);
+  const [showRunesList, setShowRunesList] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   // Runas predefinidas (variables comunes)
   const commonRunes = lang === 'ES' ? [
@@ -62,8 +70,10 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
       });
       
       setWorkbook(wb);
+      setSheetNames(wb.SheetNames);
       const firstSheetName = wb.SheetNames[0];
       setSheetName(firstSheetName);
+      setCurrentSheetIndex(0);
       loadWorksheet(wb, firstSheetName);
       setExcelFile(file);
     } catch (error) {
@@ -121,20 +131,34 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
     setCustomRunes(Array.from(foundRunes).filter(r => !commonRunes.includes(r)));
   };
 
-  // Insertar runa en celda seleccionada
-  const insertRune = (runeName: string) => {
-    if (!selectedCell || !worksheet || !workbook) return;
+  // Cambiar de hoja
+  const changeSheet = (index: number) => {
+    if (!workbook || index < 0 || index >= sheetNames.length) return;
+    const newSheetName = sheetNames[index];
+    setSheetName(newSheetName);
+    setCurrentSheetIndex(index);
+    loadWorksheet(workbook, newSheetName);
+    setSelectedCell(null);
+    setEditingCell(null);
+  };
+
+  // Actualizar celda en worksheet y grid
+  const updateCell = (row: number, col: number, value: string) => {
+    if (!worksheet || !workbook) return;
     
-    const { row, col } = selectedCell;
     const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-    const runeText = `{{${runeName}}}`;
     
-    // Actualizar worksheet
-    worksheet[cellAddress] = {
-      v: runeText,
-      t: 's',
-      w: runeText
-    };
+    if (value.trim() === '') {
+      // Eliminar celda si está vacía
+      delete worksheet[cellAddress];
+    } else {
+      // Actualizar celda
+      worksheet[cellAddress] = {
+        v: value,
+        t: 's',
+        w: value
+      };
+    }
     
     // Actualizar workbook
     if (sheetName) {
@@ -144,14 +168,94 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
     // Actualizar grid visual
     const newCells = [...cells];
     if (newCells[row] && newCells[row][col]) {
-      newCells[row][col].value = runeText;
+      newCells[row][col].value = value;
       setCells(newCells);
     }
+    
+    // Extraer runas del nuevo valor
+    const markerRegex = /\{\{([^}]+)\}\}/g;
+    let match;
+    while ((match = markerRegex.exec(value)) !== null) {
+      const runeName = match[1].trim().toUpperCase();
+      if (runeName && !commonRunes.includes(runeName) && !customRunes.includes(runeName)) {
+        setCustomRunes([...customRunes, runeName]);
+      }
+    }
+  };
+
+  // Insertar runa en celda seleccionada
+  const insertRune = (runeName: string) => {
+    if (!selectedCell || !worksheet || !workbook) return;
+    
+    const { row, col } = selectedCell;
+    const runeText = `{{${runeName}}}`;
+    updateCell(row, col, runeText);
     
     // Si es una runa personalizada nueva, agregarla a la lista
     if (!commonRunes.includes(runeName) && !customRunes.includes(runeName)) {
       setCustomRunes([...customRunes, runeName]);
     }
+  };
+
+  // Iniciar edición de celda
+  const startEditing = (row: number, col: number) => {
+    const cell = cells[row]?.[col];
+    setEditingCell({ row, col });
+    setEditValue(cell?.value || '');
+    setTimeout(() => editInputRef.current?.focus(), 0);
+  };
+
+  // Finalizar edición
+  const finishEditing = () => {
+    if (editingCell) {
+      updateCell(editingCell.row, editingCell.col, editValue);
+      setEditingCell(null);
+      setEditValue('');
+    }
+  };
+
+  // Limpiar celda seleccionada
+  const clearCell = () => {
+    if (!selectedCell) return;
+    updateCell(selectedCell.row, selectedCell.col, '');
+    setSelectedCell(null);
+  };
+
+  // Obtener todas las runas usadas
+  const getAllUsedRunes = (): string[] => {
+    const runes = new Set<string>();
+    const markerRegex = /\{\{([^}]+)\}\}/g;
+    
+    cells.forEach(row => {
+      row.forEach(cell => {
+        if (cell.value) {
+          let match;
+          while ((match = markerRegex.exec(cell.value)) !== null) {
+            runes.add(match[1].trim().toUpperCase());
+          }
+        }
+      });
+    });
+    
+    return Array.from(runes).sort();
+  };
+
+  // Filtrar celdas por búsqueda
+  const getFilteredCells = (): { row: number; col: number }[] => {
+    if (!searchTerm.trim()) return [];
+    
+    const results: { row: number; col: number }[] = [];
+    const searchLower = searchTerm.toLowerCase();
+    
+    cells.forEach((row, rowIndex) => {
+      row.forEach((cell, colIndex) => {
+        if (cell.value.toLowerCase().includes(searchLower)) {
+          results.push({ row: rowIndex, col: colIndex });
+        }
+      });
+    });
+    
+    return results;
   };
 
   // Agregar runa personalizada
@@ -181,8 +285,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
       const excelBuffer = XLSX.write(workbook, {
         type: 'array',
         bookType: 'xlsx',
-        cellStyles: true,
-        cellNF: true
+        cellStyles: true
       });
 
       const blob = new Blob([excelBuffer], { 
@@ -280,21 +383,109 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
             {/* Grid de Celdas */}
             <div className="lg:col-span-3">
               <div className="bg-gray-800 border-4 border-purple-500 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-purple-300">
-                    {lang === 'ES' ? 'Plantilla Excel' : lang === 'EN' ? 'Excel Template' : lang === 'DE' ? 'Excel-Vorlage' : 'Modèle Excel'}: {excelFile.name}
-                  </h2>
+                {/* Barra de herramientas superior */}
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Navegación de hojas */}
+                    {sheetNames.length > 1 && (
+                      <div className="flex items-center gap-2 bg-gray-700 p-2 rounded border-2 border-gray-600">
+                        <button
+                          onClick={() => changeSheet(currentSheetIndex - 1)}
+                          disabled={currentSheetIndex === 0}
+                          className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ChevronLeft className="w-4 h-4 text-purple-300" />
+                        </button>
+                        <span className="text-sm text-purple-300 font-bold px-2">
+                          {sheetName} ({currentSheetIndex + 1}/{sheetNames.length})
+                        </span>
+                        <button
+                          onClick={() => changeSheet(currentSheetIndex + 1)}
+                          disabled={currentSheetIndex === sheetNames.length - 1}
+                          className="p-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ChevronRight className="w-4 h-4 text-purple-300" />
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Búsqueda */}
+                    <div className="flex items-center gap-2 bg-gray-700 p-2 rounded border-2 border-gray-600">
+                      <Search className="w-4 h-4 text-purple-300" />
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder={lang === 'ES' ? 'Buscar...' : lang === 'EN' ? 'Search...' : lang === 'DE' ? 'Suchen...' : 'Rechercher...'}
+                        className="bg-transparent text-white text-sm w-32 focus:outline-none"
+                      />
+                      {searchTerm && (
+                        <button onClick={() => setSearchTerm('')} className="text-gray-400 hover:text-white">
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Zoom */}
+                    <div className="flex items-center gap-2 bg-gray-700 p-2 rounded border-2 border-gray-600">
+                      <ZoomOut 
+                        className="w-4 h-4 text-purple-300 cursor-pointer hover:text-purple-200" 
+                        onClick={() => setZoom(Math.max(50, zoom - 10))}
+                      />
+                      <span className="text-sm text-purple-300 font-bold">{zoom}%</span>
+                      <ZoomIn 
+                        className="w-4 h-4 text-purple-300 cursor-pointer hover:text-purple-200" 
+                        onClick={() => setZoom(Math.min(200, zoom + 10))}
+                      />
+                    </div>
+
+                    {/* Contador de runas */}
+                    <button
+                      onClick={() => setShowRunesList(!showRunesList)}
+                      className="bg-indigo-600 text-white border-2 border-indigo-500 hover:bg-indigo-500 transition-colors font-bold py-2 px-4 flex items-center gap-2 text-sm"
+                    >
+                      <List className="w-4 h-4" />
+                      {getAllUsedRunes().length} {lang === 'ES' ? 'runas' : lang === 'EN' ? 'runes' : lang === 'DE' ? 'Runen' : 'runes'}
+                    </button>
+                  </div>
+
                   <button
                     onClick={saveTemplate}
                     className="bg-purple-600 text-white border-2 border-purple-500 hover:bg-purple-500 transition-colors font-bold py-2 px-6 flex items-center gap-2"
                   >
                     <Download className="w-5 h-5" />
-                    {lang === 'ES' ? 'GUARDAR PLANTILLA' : lang === 'EN' ? 'SAVE TEMPLATE' : lang === 'DE' ? 'VORLAGE SPEICHERN' : 'ENREGISTRER MODÈLE'}
+                    {lang === 'ES' ? 'GUARDAR' : lang === 'EN' ? 'SAVE' : lang === 'DE' ? 'SPEICHERN' : 'ENREGISTRER'}
                   </button>
                 </div>
 
+                {/* Lista de runas usadas (modal) */}
+                {showRunesList && (
+                  <div className="mb-4 p-4 bg-gray-900 border-2 border-indigo-500 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold text-indigo-400">
+                        {lang === 'ES' ? 'Runas Usadas en el Documento' : lang === 'EN' ? 'Runes Used in Document' : lang === 'DE' ? 'Verwendete Runen' : 'Runes Utilisées'}
+                      </h3>
+                      <button onClick={() => setShowRunesList(false)} className="text-gray-400 hover:text-white">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {getAllUsedRunes().map((rune) => (
+                        <span key={rune} className="bg-indigo-900/50 border-2 border-indigo-600 text-indigo-300 px-3 py-1 rounded text-sm font-bold">
+                          {`{{${rune}}}`}
+                        </span>
+                      ))}
+                      {getAllUsedRunes().length === 0 && (
+                        <p className="text-gray-400 text-sm">
+                          {lang === 'ES' ? 'No hay runas en el documento' : lang === 'EN' ? 'No runes in document' : lang === 'DE' ? 'Keine Runen im Dokument' : 'Aucune rune dans le document'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Grid Scrollable */}
-                <div className="overflow-auto max-h-[600px] border-2 border-gray-700">
+                <div className="overflow-auto max-h-[600px] border-2 border-gray-700" style={{ zoom: `${zoom}%` }}>
                   <table className="w-full border-collapse">
                     <thead className="sticky top-0 bg-gray-900 z-10">
                       <tr>
@@ -312,32 +503,69 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
                           <td className="border border-gray-600 bg-gray-800 text-gray-400 text-xs p-2 text-center font-bold">
                             {rowIndex + 1}
                           </td>
-                          {row.map((cell, colIndex) => (
-                            <td
-                              key={colIndex}
-                              onClick={() => setSelectedCell({ row: rowIndex, col: colIndex })}
-                              className={`border border-gray-600 p-2 cursor-pointer min-w-[120px] ${
-                                selectedCell?.row === rowIndex && selectedCell?.col === colIndex
-                                  ? 'bg-purple-600 text-white font-bold'
-                                  : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                              } ${
-                                cell.value.includes('{{') && cell.value.includes('}}')
-                                  ? 'text-emerald-400 font-bold'
-                                  : ''
-                              }`}
-                            >
-                              {cell.value || ''}
-                            </td>
-                          ))}
+                          {row.map((cell, colIndex) => {
+                            const isSelected = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
+                            const isEditing = editingCell?.row === rowIndex && editingCell?.col === colIndex;
+                            const hasRune = cell.value.includes('{{') && cell.value.includes('}}');
+                            const isSearchMatch = searchTerm && cell.value.toLowerCase().includes(searchTerm.toLowerCase());
+                            const searchResults = getFilteredCells();
+                            const isHighlighted = searchTerm && searchResults.some(r => r.row === rowIndex && r.col === colIndex);
+                            
+                            return (
+                              <td
+                                key={colIndex}
+                                onClick={() => !isEditing && setSelectedCell({ row: rowIndex, col: colIndex })}
+                                onDoubleClick={() => startEditing(rowIndex, colIndex)}
+                                className={`border border-gray-600 p-2 cursor-pointer min-w-[120px] relative ${
+                                  isSelected && !isEditing
+                                    ? 'bg-purple-600 text-white font-bold'
+                                    : isEditing
+                                    ? 'bg-purple-800 text-white'
+                                    : isHighlighted
+                                    ? 'bg-yellow-600/30 text-yellow-200'
+                                    : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                                } ${
+                                  hasRune && !isSelected
+                                    ? 'text-emerald-400 font-bold border-emerald-500 border-2'
+                                    : ''
+                                }`}
+                              >
+                                {isEditing ? (
+                                  <input
+                                    ref={editInputRef}
+                                    type="text"
+                                    value={editValue}
+                                    onChange={(e) => setEditValue(e.target.value)}
+                                    onBlur={finishEditing}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        finishEditing();
+                                      } else if (e.key === 'Escape') {
+                                        setEditingCell(null);
+                                        setEditValue('');
+                                      }
+                                    }}
+                                    className="w-full bg-purple-800 text-white border-2 border-purple-500 rounded px-2 py-1 focus:outline-none"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                ) : (
+                                  <span className={hasRune ? 'text-emerald-400' : ''}>
+                                    {cell.value || ''}
+                                  </span>
+                                )}
+                              </td>
+                            );
+                          })}
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
 
-                {selectedCell && (
-                  <div className="mt-4 p-3 bg-purple-900/30 border-2 border-purple-600 rounded">
-                    <p className="text-purple-300 text-sm">
+                {selectedCell && !editingCell && (
+                  <div className="mt-4 p-3 bg-purple-900/30 border-2 border-purple-600 rounded flex items-center justify-between">
+                    <p className="text-purple-300 text-sm font-bold">
                       {lang === 'ES' 
                         ? `Celda seleccionada: ${XLSX.utils.encode_col(selectedCell.col)}${selectedCell.row + 1}`
                         : lang === 'EN'
@@ -345,6 +573,32 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
                         : lang === 'DE'
                         ? `Ausgewählte Zelle: ${XLSX.utils.encode_col(selectedCell.col)}${selectedCell.row + 1}`
                         : `Cellule sélectionnée: ${XLSX.utils.encode_col(selectedCell.col)}${selectedCell.row + 1}`}
+                      {cells[selectedCell.row]?.[selectedCell.col]?.value && (
+                        <span className="ml-2 text-purple-200">
+                          = "{cells[selectedCell.row][selectedCell.col].value}"
+                        </span>
+                      )}
+                    </p>
+                    <button
+                      onClick={clearCell}
+                      className="bg-red-600 text-white border-2 border-red-500 hover:bg-red-500 transition-colors font-bold py-1 px-3 flex items-center gap-2 text-sm"
+                      title={lang === 'ES' ? 'Limpiar celda' : lang === 'EN' ? 'Clear cell' : lang === 'DE' ? 'Zelle löschen' : 'Effacer cellule'}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {lang === 'ES' ? 'Limpiar' : lang === 'EN' ? 'Clear' : lang === 'DE' ? 'Löschen' : 'Effacer'}
+                    </button>
+                  </div>
+                )}
+                {editingCell && (
+                  <div className="mt-4 p-3 bg-purple-800 border-2 border-purple-500 rounded">
+                    <p className="text-purple-200 text-sm">
+                      {lang === 'ES' 
+                        ? '💡 Presiona Enter para guardar o Esc para cancelar'
+                        : lang === 'EN'
+                        ? '💡 Press Enter to save or Esc to cancel'
+                        : lang === 'DE'
+                        ? '💡 Enter drücken zum Speichern oder Esc zum Abbrechen'
+                        : '💡 Appuyez sur Entrée pour enregistrer ou Esc pour annuler'}
                     </p>
                   </div>
                 )}
@@ -360,12 +614,12 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
                 </h3>
                 <p className="text-gray-400 text-sm mb-4">
                   {lang === 'ES' 
-                    ? 'Haz clic en una celda y luego en una runa para insertarla'
+                    ? 'Haz clic en una celda y luego en una runa para insertarla. Doble clic para editar texto.'
                     : lang === 'EN'
-                    ? 'Click on a cell then click on a rune to insert it'
+                    ? 'Click on a cell then click on a rune to insert it. Double click to edit text.'
                     : lang === 'DE'
-                    ? 'Klicken Sie auf eine Zelle und dann auf eine Rune, um sie einzufügen'
-                    : 'Cliquez sur une cellule puis sur une rune pour l\'insérer'}
+                    ? 'Klicken Sie auf eine Zelle und dann auf eine Rune, um sie einzufügen. Doppelklick zum Bearbeiten.'
+                    : 'Cliquez sur une cellule puis sur une rune pour l\'insérer. Double-clic pour éditer.'}
                 </p>
 
                 {/* Runas Comunes */}
