@@ -9,7 +9,7 @@ import OracleView from './components/OracleView';
 import FeatureCard from './components/FeatureCard';
 import ChatSession from './components/ChatSession';
 import PricingPage from './components/PricingPage';
-import { getPremiumStatus } from './services/gumroadService';
+import { getPremiumStatus, getFeatureAccessStatus, consumeFreeTrialUse, getPlanLimits } from './services/gumroadService';
 import { usePdfProcessor } from './hooks/usePdfProcessor';
 import { mergePdfs, imagesToPdf, splitPdf, addWatermark, convertToText, convertToImages, convertToDocx, convertToExcel, convertToPptx } from './services/pdfTools';
 import { generateQuiz, generateFlashcards, generateMindMapData } from './services/geminiService';
@@ -18,7 +18,7 @@ import { fillExcelTemplate, getTemplateKeys } from './services/excelTemplateServ
 import { getTranslation } from './services/translations';
 import { ViewType, Language, DocumentContext, StudyMaterial, MindMapData } from './types';
 import { useSEO } from './hooks/useSEO';
-import { Upload, Wand2, Download, Trash2, FileText, Layers, Image as ImageIcon, Sparkles, ArrowRight, Scissors, PenTool, Type, FileStack, Repeat, FileSpreadsheet, Briefcase, GraduationCap, Scale, BookOpen, BrainCircuit, Presentation } from 'lucide-react';
+import { Upload, Wand2, Download, Trash2, FileText, Layers, Image as ImageIcon, Sparkles, ArrowRight, Scissors, PenTool, Type, FileStack, Repeat, FileSpreadsheet, Briefcase, GraduationCap, Scale, BookOpen, BrainCircuit, Presentation, Lock } from 'lucide-react';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('HOME');
@@ -261,12 +261,47 @@ const App: React.FC = () => {
   };
 
   const executeExcelTemplate = async () => {
+      // Verificar acceso antes de procesar
+      const accessStatus = getFeatureAccessStatus('excel_template');
+      const premiumStatus = getPremiumStatus();
+      
+      if (accessStatus.isLocked) {
+          alert(lang === 'ES' 
+              ? 'Has agotado tus 3 usos gratuitos de Plantillas Excel. ¡Actualiza a Premium para continuar!' 
+              : 'You have exhausted your 3 free uses of Excel Templates. Upgrade to Premium to continue!');
+          setCurrentView('PRICING');
+          return;
+      }
+
+      // Consumir un uso gratuito si no es premium
+      if (!accessStatus.isPremium) {
+          const useConsumed = consumeFreeTrialUse('excel_template');
+          if (!useConsumed) {
+              alert(lang === 'ES' 
+                  ? 'Has agotado tus 3 usos gratuitos de Plantillas Excel. ¡Actualiza a Premium para continuar!' 
+                  : 'You have exhausted your 3 free uses of Excel Templates. Upgrade to Premium to continue!');
+              setCurrentView('PRICING');
+              return;
+          }
+      }
+
       try {
           setIsTemplateProcessing(true);
           setTemplateProgress({ current: 0, total: pdfsForTemplate.length });
           
           if (pdfsForTemplate.length === 0) throw new Error(lang === 'ES' ? "Por favor, sube al menos un archivo PDF." : "Please upload at least one PDF file.");
           if (!excelTemplate) throw new Error(lang === 'ES' ? "Por favor, sube una plantilla Excel." : "Please upload an Excel template.");
+          
+          // Verificar límite de documentos según el plan
+          if (premiumStatus.isPremium && premiumStatus.maxExcelDocuments) {
+              if (pdfsForTemplate.length > premiumStatus.maxExcelDocuments) {
+                  throw new Error(
+                      lang === 'ES' 
+                          ? `Límite de documentos excedido. Tu plan permite máximo ${premiumStatus.maxExcelDocuments} documentos. Has seleccionado ${pdfsForTemplate.length}.` 
+                          : `Document limit exceeded. Your plan allows a maximum of ${premiumStatus.maxExcelDocuments} documents. You selected ${pdfsForTemplate.length}.`
+                  );
+              }
+          }
           
           // Usar las claves detectadas para extracción dirigida
           await fillExcelTemplate(
@@ -868,7 +903,9 @@ const App: React.FC = () => {
          ), 1)}
 
          {/* STUDY MODE */}
-         {currentView === 'EXCEL_TEMPLATE' && (
+         {currentView === 'EXCEL_TEMPLATE' && (() => {
+            const accessStatus = getFeatureAccessStatus('excel_template');
+            return (
             <div className="max-w-3xl w-full mx-auto p-4 md:p-8">
                 <div className="mb-6 flex items-center gap-2 text-gray-500 cursor-pointer hover:underline" onClick={() => setCurrentView('HOME')}>
                     <ArrowRight className="transform rotate-180" /> {t.back}
@@ -877,6 +914,57 @@ const App: React.FC = () => {
                     <h2 className="text-4xl pixel-font-header text-gray-200 mb-2 neon-glow-text">{t.excelTemplateTitle}</h2>
                     <p className="text-xl text-gray-400 font-bold">{t.excelTemplateDesc}</p>
                 </div>
+
+                {/* Indicador de acceso premium/trial */}
+                <div className="mb-4 p-4 bg-gray-800 border-4 border-emerald-600 rounded-lg">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            {accessStatus.isPremium ? (
+                                <span className="text-yellow-400 font-bold text-lg">
+                                    ⭐ PREMIUM ACTIVO
+                                </span>
+                            ) : accessStatus.freeTrialUses > 0 ? (
+                                <span className="text-blue-400 font-bold text-lg">
+                                    🎁 PRUEBA GRATIS: {accessStatus.freeTrialUses} de {accessStatus.maxFreeTrialUses} usos restantes
+                                </span>
+                            ) : (
+                                <span className="text-red-400 font-bold text-lg">
+                                    🔒 Usos gratuitos agotados
+                                </span>
+                            )}
+                        </div>
+                        {!accessStatus.isPremium && (
+                            <button
+                                onClick={() => setCurrentView('PRICING')}
+                                className="px-4 py-2 bg-yellow-600 text-black font-bold border-2 border-yellow-500 hover:bg-yellow-500 transition-colors"
+                            >
+                                {t.pricingActivateLicense || 'ACTIVAR PREMIUM'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Si está bloqueado, mostrar mensaje de bloqueo */}
+                {accessStatus.isLocked && (
+                    <div className="bg-red-900/50 border-4 border-red-600 rounded-lg p-8 text-center mb-6">
+                        <Lock className="w-16 h-16 mx-auto mb-4 text-red-400" />
+                        <p className="text-red-200 font-bold text-xl md:text-2xl mb-2">
+                            {lang === 'ES' ? 'Funcionalidad Bloqueada' : 'Feature Locked'}
+                        </p>
+                        <p className="text-red-300 text-base md:text-lg mb-6">
+                            {lang === 'ES' 
+                                ? 'Has agotado tus 3 usos gratuitos de Plantillas Excel. ¡Actualiza a Premium para desbloquear esta funcionalidad!' 
+                                : 'You have exhausted your 3 free uses of Excel Templates. Upgrade to Premium to unlock this feature!'}
+                        </p>
+                        <button
+                            onClick={() => setCurrentView('PRICING')}
+                            className="px-8 py-4 bg-yellow-600 text-black font-bold border-2 border-yellow-500 hover:bg-yellow-500 transition-colors text-lg"
+                        >
+                            {t.pricingActivateLicense || 'ACTIVAR PREMIUM'}
+                        </button>
+                    </div>
+                )}
+
                 <PixelCard title="PLANTILLA EXCEL INTELIGENTE" color="emerald" className="text-center">
                     <div className="space-y-6">
                         {/* PDF Input - Multiple */}
@@ -906,6 +994,19 @@ const App: React.FC = () => {
                                         ? `${pdfsForTemplate.length} PDF(s) seleccionado(s)` 
                                         : 'SELECCIONAR PDFs (MÚLTIPLES)'}
                                 </div>
+                                {(() => {
+                                    const premiumStatus = getPremiumStatus();
+                                    if (premiumStatus.isPremium && premiumStatus.maxExcelDocuments) {
+                                        return (
+                                            <div className="text-sm text-emerald-400 mt-2">
+                                                {lang === 'ES' 
+                                                    ? `Límite: ${premiumStatus.maxExcelDocuments} documentos` 
+                                                    : `Limit: ${premiumStatus.maxExcelDocuments} documents`}
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                                 {pdfsForTemplate.length > 0 && (
                                     <div className="mt-2 text-sm text-emerald-400 max-h-32 overflow-y-auto w-full text-left px-4">
                                         {pdfsForTemplate.map((file, idx) => (
@@ -1147,7 +1248,7 @@ const App: React.FC = () => {
                         <div className="flex gap-4 justify-center">
                             <button 
                                 onClick={executeExcelTemplate} 
-                                disabled={isTemplateProcessing || pdfsForTemplate.length === 0 || !excelTemplate}
+                                disabled={isTemplateProcessing || pdfsForTemplate.length === 0 || !excelTemplate || accessStatus.isLocked}
                                 className="bg-emerald-600 text-white border-4 border-emerald-800 px-8 py-4 font-bold text-xl retro-shadow flex items-center gap-2 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isTemplateProcessing ? <Sparkles className="animate-spin" /> : <Wand2 />}
@@ -1170,7 +1271,8 @@ const App: React.FC = () => {
                     </div>
                 </PixelCard>
             </div>
-         )}
+            );
+         })()}
 
          {currentView === 'STUDY' && (
              studyMaterial ? (

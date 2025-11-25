@@ -1,8 +1,9 @@
 import React from 'react';
 import { getTranslation } from '../services/translations';
 import { Language } from '../types';
-import { Check, X, Sparkles, Zap, Crown } from 'lucide-react';
+import { Check, X, Sparkles, Zap, Crown, Star } from 'lucide-react';
 import LicenseActivator from './LicenseActivator';
+import { getPremiumStatus } from '../services/gumroadService';
 
 interface PricingPageProps {
   lang: Language;
@@ -19,6 +20,8 @@ const PricingPage: React.FC<PricingPageProps> = ({
 }) => {
   const t = getTranslation(lang);
   const [showActivator, setShowActivator] = React.useState(false);
+  const premiumStatus = getPremiumStatus();
+  const currentPlanType = premiumStatus.planType;
 
   const features = {
     free: [
@@ -31,10 +34,18 @@ const PricingPage: React.FC<PricingPageProps> = ({
     premium: [
       t.pricingFeature6 || 'Preguntas ilimitadas en Chat',
       t.pricingFeature7 || '8k tokens por respuesta',
-      t.pricingFeature8 || 'Plantillas Excel Inteligentes',
+      t.pricingFeature8 || 'Plantillas Excel Inteligentes (hasta 20 documentos)',
       t.pricingFeature9 || 'Procesamiento de PDFs grandes (800k caracteres)',
       t.pricingFeature10 || 'Soporte prioritario',
       t.pricingFeature11 || 'Todas las funciones gratuitas',
+    ],
+    platinum: [
+      t.pricingFeature12 || 'Preguntas ilimitadas en Chat',
+      t.pricingFeature13 || '8k tokens por respuesta',
+      t.pricingFeature14 || 'Plantillas Excel Inteligentes (hasta 100 documentos)',
+      t.pricingFeature15 || 'Procesamiento de PDFs grandes (800k caracteres)',
+      t.pricingFeature16 || 'Soporte prioritario',
+      t.pricingFeature17 || 'Todas las funciones Premium',
     ],
   };
 
@@ -48,6 +59,11 @@ const PricingPage: React.FC<PricingPageProps> = ({
       t.pricingUseCase4 || 'Contables que procesan múltiples facturas',
       t.pricingUseCase5 || 'Empresas que automatizan reportes',
       t.pricingUseCase6 || 'Profesionales que analizan documentos largos',
+    ],
+    platinum: [
+      t.pricingUseCase7 || 'Grandes empresas con alto volumen',
+      t.pricingUseCase8 || 'Procesamiento masivo de facturas',
+      t.pricingUseCase9 || 'Automatización empresarial avanzada',
     ],
   };
 
@@ -65,7 +81,7 @@ const PricingPage: React.FC<PricingPageProps> = ({
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
           {/* Free Plan */}
           <div className="bg-gray-800 border-4 border-gray-700 rounded-lg p-8 relative">
             <div className="text-center mb-6">
@@ -74,6 +90,7 @@ const PricingPage: React.FC<PricingPageProps> = ({
                 <span className="text-yellow-400 font-bold">{t.pricingFree || 'GRATIS'}</span>
               </div>
               <h2 className="text-3xl font-bold text-white mb-2">{t.pricingFreePlan || 'Plan Gratuito'}</h2>
+              <div className="text-4xl font-bold text-yellow-400 mb-2">€0</div>
               <p className="text-gray-400">{t.pricingFreeDesc || 'Perfecto para empezar'}</p>
             </div>
 
@@ -123,6 +140,7 @@ const PricingPage: React.FC<PricingPageProps> = ({
               <h2 className="text-3xl font-bold text-indigo-400 mb-2">
                 {t.pricingPremiumPlan || 'Plan Premium'}
               </h2>
+              <div className="text-4xl font-bold text-yellow-400 mb-2">€2</div>
               <p className="text-gray-400">{t.pricingPremiumDesc || 'Todo el poder desbloqueado'}</p>
             </div>
 
@@ -149,7 +167,7 @@ const PricingPage: React.FC<PricingPageProps> = ({
               </ul>
             </div>
 
-            {isPremium ? (
+            {isPremium && currentPlanType === 'premium' ? (
               <button
                 disabled
                 className="w-full bg-emerald-600 text-white border-2 border-emerald-500 font-bold py-3 opacity-75 cursor-not-allowed"
@@ -166,6 +184,66 @@ const PricingPage: React.FC<PricingPageProps> = ({
               </button>
             )}
           </div>
+
+          {/* Platinum+ Plan */}
+          <div className="bg-purple-900/30 border-4 border-purple-500 rounded-lg p-8 relative">
+            {isPremium && currentPlanType === 'platinum_plus' && (
+              <div className="absolute top-4 right-4 bg-emerald-600 text-black px-3 py-1 rounded font-bold text-sm">
+                {t.pricingActive || 'ACTIVO'}
+              </div>
+            )}
+            <div className="text-center mb-6">
+              <div className="inline-block bg-purple-600 px-4 py-2 rounded mb-4">
+                <Star className="w-6 h-6 text-yellow-400 inline mr-2" />
+                <span className="text-yellow-400 font-bold">{t.pricingPlatinum || 'PLATINUM+'}</span>
+              </div>
+              <h2 className="text-3xl font-bold text-purple-400 mb-2">
+                {t.pricingPlatinumPlan || 'Plan Platinum+'}
+              </h2>
+              <div className="text-4xl font-bold text-yellow-400 mb-2">€8</div>
+              <p className="text-gray-400">{t.pricingPlatinumDesc || 'Máximo rendimiento'}</p>
+            </div>
+
+            <div className="space-y-4 mb-8">
+              {features.platinum.map((feature, idx) => (
+                <div key={idx} className="flex items-start gap-3">
+                  <Check className="w-6 h-6 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <span className="text-gray-300 text-base md:text-lg">{feature}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mb-6">
+              <h3 className="text-xl md:text-2xl font-bold text-gray-300 mb-4">
+                {t.pricingUseCases || 'Casos de Uso:'}
+              </h3>
+              <ul className="space-y-3">
+                {useCases.platinum.map((useCase, idx) => (
+                  <li key={idx} className="text-base md:text-lg text-gray-400 flex items-start gap-3">
+                    <span className="text-purple-400 text-xl">•</span>
+                    {useCase}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {isPremium && currentPlanType === 'platinum_plus' ? (
+              <button
+                disabled
+                className="w-full bg-emerald-600 text-white border-2 border-emerald-500 font-bold py-3 opacity-75 cursor-not-allowed"
+              >
+                {t.pricingAlreadyPlatinum || 'YA ERES PLATINUM+'}
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowActivator(true)}
+                className="w-full bg-purple-600 text-white border-2 border-purple-500 hover:bg-purple-500 transition-colors font-bold py-4 text-lg flex items-center justify-center gap-2"
+              >
+                <Star className="w-6 h-6" />
+                {t.pricingActivateLicense || 'ACTIVAR LICENCIA'}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Comparison Table */}
@@ -178,8 +256,9 @@ const PricingPage: React.FC<PricingPageProps> = ({
               <thead>
                 <tr className="border-b-2 border-gray-700">
                   <th className="text-left py-4 px-4 text-gray-300 text-lg md:text-xl font-bold">{t.pricingFeature || 'Característica'}</th>
-                  <th className="text-center py-4 px-4 text-gray-300 text-lg md:text-xl font-bold">{t.pricingFree || 'Gratis'}</th>
-                  <th className="text-center py-4 px-4 text-indigo-400 text-lg md:text-xl font-bold">{t.pricingPremium || 'Premium'}</th>
+                  <th className="text-center py-4 px-4 text-gray-300 text-lg md:text-xl font-bold">€0</th>
+                  <th className="text-center py-4 px-4 text-indigo-400 text-lg md:text-xl font-bold">€2</th>
+                  <th className="text-center py-4 px-4 text-purple-400 text-lg md:text-xl font-bold">€8</th>
                 </tr>
               </thead>
               <tbody>
@@ -187,10 +266,12 @@ const PricingPage: React.FC<PricingPageProps> = ({
                   <td className="py-4 px-4 text-gray-300 text-base md:text-lg">{t.pricingChatQuestions || 'Preguntas en Chat'}</td>
                   <td className="text-center py-4 px-4 text-gray-400 text-base md:text-lg">3 por documento</td>
                   <td className="text-center py-4 px-4 text-emerald-400 font-bold text-base md:text-lg">Ilimitadas</td>
+                  <td className="text-center py-4 px-4 text-emerald-400 font-bold text-base md:text-lg">Ilimitadas</td>
                 </tr>
                 <tr className="border-b border-gray-700">
                   <td className="py-4 px-4 text-gray-300 text-base md:text-lg">{t.pricingTokens || 'Tokens por respuesta'}</td>
                   <td className="text-center py-4 px-4 text-gray-400 text-base md:text-lg">2k</td>
+                  <td className="text-center py-4 px-4 text-emerald-400 font-bold text-base md:text-lg">8k</td>
                   <td className="text-center py-4 px-4 text-emerald-400 font-bold text-base md:text-lg">8k</td>
                 </tr>
                 <tr className="border-b border-gray-700">
@@ -198,18 +279,19 @@ const PricingPage: React.FC<PricingPageProps> = ({
                   <td className="text-center py-4 px-4">
                     <X className="w-6 h-6 text-red-400 mx-auto" />
                   </td>
-                  <td className="text-center py-4 px-4">
-                    <Check className="w-6 h-6 text-emerald-400 mx-auto" />
-                  </td>
+                  <td className="text-center py-4 px-4 text-emerald-400 font-bold text-base md:text-lg">Hasta 20 docs</td>
+                  <td className="text-center py-4 px-4 text-emerald-400 font-bold text-base md:text-lg">Hasta 100 docs</td>
                 </tr>
                 <tr className="border-b border-gray-700">
                   <td className="py-4 px-4 text-gray-300 text-base md:text-lg">{t.pricingPdfSize || 'Tamaño máximo PDF'}</td>
                   <td className="text-center py-4 px-4 text-gray-400 text-base md:text-lg">200k caracteres</td>
                   <td className="text-center py-4 px-4 text-emerald-400 font-bold text-base md:text-lg">800k caracteres</td>
+                  <td className="text-center py-4 px-4 text-emerald-400 font-bold text-base md:text-lg">800k caracteres</td>
                 </tr>
                 <tr>
                   <td className="py-4 px-4 text-gray-300 text-base md:text-lg">{t.pricingSupport || 'Soporte'}</td>
                   <td className="text-center py-4 px-4 text-gray-400 text-base md:text-lg">{t.pricingCommunity || 'Comunidad'}</td>
+                  <td className="text-center py-4 px-4 text-emerald-400 font-bold text-base md:text-lg">{t.pricingPriority || 'Prioritario'}</td>
                   <td className="text-center py-4 px-4 text-emerald-400 font-bold text-base md:text-lg">{t.pricingPriority || 'Prioritario'}</td>
                 </tr>
               </tbody>

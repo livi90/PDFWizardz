@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, Language } from '../types';
 import { getChatResponse } from '../services/geminiService';
 import { getTranslation } from '../services/translations';
-import { Send, X, FileText, Sparkles } from 'lucide-react';
+import { Send, X, FileText, Sparkles, Lock } from 'lucide-react';
+import { getFeatureAccessStatus, consumeFreeTrialUse } from '../services/gumroadService';
 
 interface ChatSessionProps {
   pdfText: string;
@@ -24,11 +25,14 @@ const ChatSession: React.FC<ChatSessionProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
+  const [accessStatus, setAccessStatus] = useState(getFeatureAccessStatus('chat'));
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const MAX_QUESTIONS = 3;
-  const maxQuestions = isPremium ? Infinity : MAX_QUESTIONS;
+  // Verificar acceso: premium o usos gratuitos disponibles
+  const hasAccess = accessStatus.isPremium || accessStatus.freeTrialUses > 0;
+  const maxQuestions = hasAccess ? Infinity : MAX_QUESTIONS;
 
   // Auto-scroll al final de los mensajes
   useEffect(() => {
@@ -43,7 +47,27 @@ const ChatSession: React.FC<ChatSessionProps> = ({
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
-    // Verificar límite de preguntas
+    // Verificar acceso antes de enviar
+    const currentAccess = getFeatureAccessStatus('chat');
+    setAccessStatus(currentAccess);
+    
+    if (currentAccess.isLocked) {
+      alert(t.chatLocked || 'Has agotado tus 3 usos gratuitos de Chat. ¡Actualiza a Premium para continuar!');
+      return;
+    }
+
+    // Consumir un uso gratuito si no es premium
+    if (!currentAccess.isPremium) {
+      const useConsumed = consumeFreeTrialUse('chat');
+      if (!useConsumed) {
+        alert(t.chatLocked || 'Has agotado tus 3 usos gratuitos de Chat. ¡Actualiza a Premium para continuar!');
+        return;
+      }
+      // Actualizar estado después de consumir
+      setAccessStatus(getFeatureAccessStatus('chat'));
+    }
+
+    // Verificar límite de preguntas (solo para usuarios sin acceso)
     if (questionCount >= maxQuestions) {
       alert(t.chatLimitReached);
       return;
@@ -62,7 +86,7 @@ const ChatSession: React.FC<ChatSessionProps> = ({
     setQuestionCount((prev) => prev + 1);
 
     try {
-      const response = await getChatResponse(pdfText, messages, userMessage.content, lang, isPremium);
+      const response = await getChatResponse(pdfText, messages, userMessage.content, lang, hasAccess);
       
       const assistantMessage: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -115,14 +139,19 @@ const ChatSession: React.FC<ChatSessionProps> = ({
           <div className="text-right">
             <div className="text-sm md:text-base text-gray-400 font-bold">
               {t.chatQuestionCount}: {questionCount}
-              {!isPremium && ` / ${MAX_QUESTIONS}`}
+              {!hasAccess && ` / ${MAX_QUESTIONS}`}
             </div>
             <div className="text-sm text-gray-500">
-              {t.chatMaxTokens}: {isPremium ? '100k' : '10k'} tokens
+              {t.chatMaxTokens}: {hasAccess ? '100k' : '10k'} tokens
             </div>
-            {isPremium && (
+            {accessStatus.isPremium && (
               <span className="text-sm bg-yellow-600 text-black px-3 py-1 font-bold">
                 {t.chatPremium}
+              </span>
+            )}
+            {!accessStatus.isPremium && accessStatus.freeTrialUses > 0 && (
+              <span className="text-sm bg-blue-600 text-black px-3 py-1 font-bold">
+                {t.chatFreeTrial || 'PRUEBA GRATIS'}: {accessStatus.freeTrialUses} usos
               </span>
             )}
           </div>
@@ -192,7 +221,7 @@ const ChatSession: React.FC<ChatSessionProps> = ({
           </div>
         )}
 
-        {!canAskMore && !isPremium && (
+        {!canAskMore && !hasAccess && (
           <div className="bg-yellow-900/50 border-4 border-yellow-600 rounded-lg p-5 text-center">
             <p className="text-yellow-200 font-bold text-base md:text-lg">{t.chatLimitReached}</p>
           </div>
@@ -201,29 +230,51 @@ const ChatSession: React.FC<ChatSessionProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
+      {/* Input area con bloqueo */}
       <div className="bg-gray-800 border-t-4 border-indigo-500 p-4">
-        <div className="flex gap-2 items-end">
-          <textarea
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={canAskMore ? t.chatAskQuestion : t.chatLimitReached}
-            disabled={!canAskMore || isLoading}
-            className="flex-1 bg-gray-700 text-white border-2 border-gray-600 rounded px-4 py-3 font-mono text-base md:text-lg resize-none focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            rows={3}
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isLoading || !canAskMore}
-            className="px-8 py-4 bg-indigo-600 text-white border-2 border-indigo-500 hover:bg-indigo-500 transition-colors font-bold text-base md:text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <Send className="w-5 h-5" />
-            {t.chatSend}
-          </button>
-        </div>
-        {!canAskMore && !isPremium && (
+        {accessStatus.isLocked ? (
+          <div className="bg-red-900/50 border-4 border-red-600 rounded-lg p-6 text-center">
+            <Lock className="w-12 h-12 mx-auto mb-4 text-red-400" />
+            <p className="text-red-200 font-bold text-lg md:text-xl mb-2">
+              {t.chatLocked || 'Chat Bloqueado'}
+            </p>
+            <p className="text-red-300 text-base mb-4">
+              {t.chatLockedDesc || 'Has agotado tus 3 usos gratuitos de Chat. ¡Actualiza a Premium para desbloquear esta funcionalidad!'}
+            </p>
+            <button
+              onClick={() => {
+                onClose();
+                // Navegar a pricing page
+                window.location.hash = 'pricing';
+              }}
+              className="px-6 py-3 bg-yellow-600 text-black font-bold border-2 border-yellow-500 hover:bg-yellow-500 transition-colors"
+            >
+              {t.pricingActivateLicense || 'ACTIVAR PREMIUM'}
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2 items-end">
+            <textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={canAskMore ? t.chatAskQuestion : t.chatLimitReached}
+              disabled={!canAskMore || isLoading}
+              className="flex-1 bg-gray-700 text-white border-2 border-gray-600 rounded px-4 py-3 font-mono text-base md:text-lg resize-none focus:outline-none focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              rows={3}
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim() || isLoading || !canAskMore}
+              className="px-8 py-4 bg-indigo-600 text-white border-2 border-indigo-500 hover:bg-indigo-500 transition-colors font-bold text-base md:text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Send className="w-5 h-5" />
+              {t.chatSend}
+            </button>
+          </div>
+        )}
+        {!canAskMore && !hasAccess && (
           <p className="text-sm md:text-base text-yellow-400 mt-3 text-center font-bold">
             {t.chatLimitReached}
           </p>

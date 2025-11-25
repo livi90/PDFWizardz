@@ -140,15 +140,52 @@ export const validateLicenseKey = async (
 };
 
 /**
+ * Tipos de plan disponibles
+ */
+export type PlanType = 'premium' | 'platinum_plus';
+
+/**
+ * Detecta el tipo de plan basado en el precio
+ * @param price Precio de la compra
+ * @returns Tipo de plan
+ */
+export const detectPlanType = (price: number): PlanType => {
+  // Premium: 2€, Platinum+: 8€
+  // Usamos un rango para manejar variaciones de moneda y redondeo
+  if (price >= 7) {
+    return 'platinum_plus';
+  }
+  return 'premium';
+};
+
+/**
+ * Obtiene los límites según el tipo de plan
+ */
+export const getPlanLimits = (planType: PlanType): {
+  maxExcelDocuments: number;
+} => {
+  switch (planType) {
+    case 'platinum_plus':
+      return { maxExcelDocuments: 100 };
+    case 'premium':
+      return { maxExcelDocuments: 20 };
+    default:
+      return { maxExcelDocuments: 20 };
+  }
+};
+
+/**
  * Guarda el estado premium en localStorage
  */
 export const savePremiumStatus = (
   licenseKey: string,
+  planType: PlanType,
   expiresAt: string | null = null,
   subscriptionEndsAt: string | null = null
 ): void => {
   const premiumData = {
     licenseKey,
+    planType,
     activatedAt: new Date().toISOString(),
     expiresAt,
     subscriptionEndsAt, // Para suscripciones
@@ -162,9 +199,11 @@ export const savePremiumStatus = (
  */
 export const getPremiumStatus = (): {
   isPremium: boolean;
+  planType?: PlanType;
   licenseKey?: string;
   expiresAt?: string;
   subscriptionEndsAt?: string;
+  maxExcelDocuments?: number;
 } => {
   try {
     const premiumData = localStorage.getItem('pdfwizardz_premium');
@@ -186,11 +225,16 @@ export const getPremiumStatus = (): {
       return { isPremium: false };
     }
 
+    const planType: PlanType = data.planType || 'premium';
+    const limits = getPlanLimits(planType);
+
     return {
       isPremium: data.isPremium === true,
+      planType,
       licenseKey: data.licenseKey,
       expiresAt: data.expiresAt,
       subscriptionEndsAt: data.subscriptionEndsAt,
+      maxExcelDocuments: limits.maxExcelDocuments,
     };
   } catch (error) {
     console.error('Error leyendo estado premium:', error);
@@ -203,5 +247,106 @@ export const getPremiumStatus = (): {
  */
 export const clearPremiumStatus = (): void => {
   localStorage.removeItem('pdfwizardz_premium');
+};
+
+/**
+ * Tipos de features premium que tienen usos gratuitos
+ */
+export type PremiumFeature = 'chat' | 'excel_template';
+
+/**
+ * Constantes para el sistema de usos gratuitos por feature
+ */
+const FREE_TRIAL_USES_KEY = 'pdfwizardz_free_trial_uses';
+const MAX_FREE_TRIAL_USES_PER_FEATURE = 3;
+
+/**
+ * Obtiene el número de usos gratuitos restantes para una feature específica
+ * @param feature La feature para la cual obtener los usos
+ */
+export const getFreeTrialUses = (feature: PremiumFeature): number => {
+  try {
+    const usesData = localStorage.getItem(FREE_TRIAL_USES_KEY);
+    if (!usesData) {
+      // Inicializar todas las features con 3 usos
+      const initialData: Record<PremiumFeature, number> = {
+        chat: MAX_FREE_TRIAL_USES_PER_FEATURE,
+        excel_template: MAX_FREE_TRIAL_USES_PER_FEATURE,
+      };
+      localStorage.setItem(FREE_TRIAL_USES_KEY, JSON.stringify(initialData));
+      return MAX_FREE_TRIAL_USES_PER_FEATURE;
+    }
+    const data: Record<PremiumFeature, number> = JSON.parse(usesData);
+    return data[feature] || 0;
+  } catch (error) {
+    console.error('Error leyendo usos gratuitos:', error);
+    return 0;
+  }
+};
+
+/**
+ * Consume un uso gratuito de una feature específica (solo si no es premium)
+ * @param feature La feature para la cual consumir un uso
+ * @returns true si se consumió un uso o es premium, false si no hay usos disponibles
+ */
+export const consumeFreeTrialUse = (feature: PremiumFeature): boolean => {
+  const premiumStatus = getPremiumStatus();
+  
+  // Si ya es premium, no consumir usos gratuitos
+  if (premiumStatus.isPremium) {
+    return true; // Permitir porque es premium
+  }
+  
+  try {
+    const usesData = localStorage.getItem(FREE_TRIAL_USES_KEY);
+    let data: Record<PremiumFeature, number>;
+    
+    if (!usesData) {
+      // Inicializar todas las features con 3 usos y consumir uno
+      data = {
+        chat: MAX_FREE_TRIAL_USES_PER_FEATURE,
+        excel_template: MAX_FREE_TRIAL_USES_PER_FEATURE,
+      };
+      data[feature] = data[feature] - 1;
+    } else {
+      data = JSON.parse(usesData);
+      if (data[feature] === undefined || data[feature] <= 0) {
+        return false; // No hay usos disponibles para esta feature
+      }
+      data[feature] = data[feature] - 1;
+    }
+    
+    localStorage.setItem(FREE_TRIAL_USES_KEY, JSON.stringify(data));
+    return true;
+  } catch (error) {
+    console.error('Error consumiendo uso gratuito:', error);
+    return false;
+  }
+};
+
+/**
+ * Obtiene información completa del estado de acceso para una feature específica
+ * @param feature La feature para la cual verificar el acceso
+ */
+export const getFeatureAccessStatus = (feature: PremiumFeature): {
+  hasAccess: boolean;
+  isPremium: boolean;
+  freeTrialUses: number;
+  maxFreeTrialUses: number;
+  isLocked: boolean;
+} => {
+  const premiumStatus = getPremiumStatus();
+  const freeTrialUses = getFreeTrialUses(feature);
+  
+  const hasAccess = premiumStatus.isPremium || freeTrialUses > 0;
+  const isLocked = !premiumStatus.isPremium && freeTrialUses <= 0;
+  
+  return {
+    hasAccess,
+    isPremium: premiumStatus.isPremium,
+    freeTrialUses,
+    maxFreeTrialUses: MAX_FREE_TRIAL_USES_PER_FEATURE,
+    isLocked,
+  };
 };
 

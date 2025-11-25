@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { validateLicenseKey, savePremiumStatus } from '../services/gumroadService';
+import { validateLicenseKey, savePremiumStatus, detectPlanType } from '../services/gumroadService';
 import { getTranslation } from '../services/translations';
 import { Language } from '../types';
 import { Key, Check, X, Loader2, Sparkles } from 'lucide-react';
@@ -33,6 +33,9 @@ const LicenseActivator: React.FC<LicenseActivatorProps> = ({ lang, onActivated, 
       if (result.valid && result.licenseData) {
         const purchase = result.licenseData;
         
+        // Detectar tipo de plan basado en el precio
+        const planType = detectPlanType(purchase.price);
+        
         // Determinar fecha de expiración basada en si es suscripción o no
         let expiresAt: string | null = null;
         let subscriptionEndsAt: string | null = null;
@@ -45,8 +48,8 @@ const LicenseActivator: React.FC<LicenseActivatorProps> = ({ lang, onActivated, 
           expiresAt = null;
         }
         
-        // Guardar estado premium
-        savePremiumStatus(purchase.license_key, expiresAt, subscriptionEndsAt);
+        // Guardar estado premium con tipo de plan
+        savePremiumStatus(purchase.license_key, planType, expiresAt, subscriptionEndsAt);
         setSuccess(true);
         
         // Notificar al componente padre
