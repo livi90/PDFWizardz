@@ -57,6 +57,10 @@ export const translations = {
     footer: 'PDF WIZARDZ.APP. Magia Digital para Mortales.',
     new: 'PODER',
     
+    // SEO Content
+    heroPrivacy: '🔒 100% Privado: Procesamiento completamente en tu navegador. Tus archivos nunca salen de tu PC. Alternativa segura a otros editores de PDF con privacidad RGPD garantizada.',
+    heroAutomation: '✨ Automatización IA: Renombra 100 PDFs automáticamente por contenido. Extrae datos de facturas a Excel. Organiza carpetas desordenadas sin subir archivos a internet.',
+    
     // Study
     genQuiz: 'CONJURAR EXAMEN',
     genCards: 'INVOCAR FLASHCARDS',
@@ -209,6 +213,10 @@ export const translations = {
     footer: 'PDF WIZARDZAPP. Digital Magic for Mortals.',
     new: 'POWER',
     
+    // SEO Content
+    heroPrivacy: '🔒 100% Private: Processing completely in your browser. Your files never leave your PC. Secure alternative to other PDF editors with GDPR privacy guaranteed.',
+    heroAutomation: '✨ AI Automation: Rename 100 PDFs automatically by content. Extract invoice data to Excel. Organize messy folders without uploading files to the internet.',
+    
     genQuiz: 'CONJURE QUIZ',
     genCards: 'SUMMON CARDS',
     quizScore: 'Wisdom Level',
@@ -359,6 +367,10 @@ export const translations = {
     ads: 'VERBÜNDETE',
     footer: 'PDF WIZARDZ.APP. Digitale Magie.',
     new: 'MACHT',
+    
+    // SEO Content
+    heroPrivacy: '🔒 100% Privat: Verarbeitung vollständig in Ihrem Browser. Ihre Dateien verlassen nie Ihren PC. Sichere Alternative zu anderen PDF-Editoren mit DSGVO-Datenschutz garantiert.',
+    heroAutomation: '✨ KI-Automatisierung: Benennen Sie 100 PDFs automatisch nach Inhalt um. Extrahieren Sie Rechnungsdaten nach Excel. Organisieren Sie unordentliche Ordner ohne Dateien ins Internet hochzuladen.',
     
     genQuiz: 'QUIZ BESCHWÖREN',
     genCards: 'KARTEN RUFEN',
@@ -512,6 +524,10 @@ export const translations = {
     ads: 'ALLIÉS DU ROYAUME',
     footer: 'PDF WIZARDZ.APP. Magie Numérique.',
     new: 'POUVOIR',
+    
+    // SEO Content
+    heroPrivacy: '🔒 100% Privé: Traitement complètement dans votre navigateur. Vos fichiers ne quittent jamais votre PC. Alternative sécurisée aux autres éditeurs PDF avec confidentialité RGPD garantie.',
+    heroAutomation: '✨ Automatisation IA: Renommez 100 PDFs automatiquement par contenu. Extrayez les données de factures vers Excel. Organisez les dossiers désordonnés sans télécharger de fichiers sur Internet.',
     
     genQuiz: 'CONJURER QUIZ',
     genCards: 'INVOQUER CARTES',

@@ -368,10 +368,10 @@ const App: React.FC = () => {
                 {/* SEO Content - Visible but subtle */}
                 <div className="text-sm text-gray-500 mb-6 max-w-lg">
                   <p className="mb-2">
-                    <strong className="text-emerald-400">🔒 100% Privado:</strong> Procesamiento completamente en tu navegador. Tus archivos nunca salen de tu PC. Alternativa segura a otros editores de PDF con privacidad RGPD garantizada.
+                    <strong className="text-emerald-400">{t.heroPrivacy}</strong>
                   </p>
                   <p>
-                    <strong className="text-indigo-400">✨ Automatización IA:</strong> Renombra 100 PDFs automáticamente por contenido. Extrae datos de facturas a Excel. Organiza carpetas desordenadas sin subir archivos a internet.
+                    <strong className="text-indigo-400">{t.heroAutomation}</strong>
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">

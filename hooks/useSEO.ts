@@ -11,89 +11,89 @@ const seoMetadata: Record<ViewType, Record<Language, SEOMetadata>> = {
   HOME: {
     ES: {
       title: 'PDF Wizardz - Organizador PDF con IA y Privacidad 100% Local',
-      description: 'Organiza, renombra y procesa PDFs con IA sin subir archivos a internet. Procesamiento 100% en tu navegador. Privacidad garantizada RGPD. Alternativa segura a otros editores de PDF.',
-      keywords: 'organizar PDF, renombrar PDF automático, IA PDF privada, procesar PDF local, alternativa iLovePDF segura'
+      description: '🔒 100% Privado: Procesamiento completamente en tu navegador. Tus archivos nunca salen de tu PC. ✨ Automatización IA: Renombra 100 PDFs automáticamente por contenido. Extrae datos de facturas a Excel. Organiza carpetas desordenadas sin subir archivos a internet. Alternativa segura a otros editores de PDF con privacidad RGPD garantizada. Convierte PDF a Word, Excel, PowerPoint. Crea quizzes y flashcards desde PDFs. Todo gratis y privado.',
+      keywords: 'organizar PDF, renombrar PDF automático, IA PDF privada, procesar PDF local, alternativa iLovePDF segura, extraer datos factura Excel, convertir PDF Word Excel, crear quiz PDF, flashcards PDF, procesamiento PDF navegador, PDF sin subir archivos, editor PDF privado, organizar facturas PDF, renombrar 100 PDFs automático, PDF a Excel automático, procesar PDF localmente'
     },
     EN: {
       title: 'PDF Wizardz - AI PDF Organizer with 100% Local Privacy',
-      description: 'Organize, rename and process PDFs with AI without uploading files to the internet. 100% browser processing. GDPR privacy guaranteed. Secure alternative to iLovePDF.',
-      keywords: 'organize PDF, rename PDF automatic, private AI PDF, local PDF processing, secure iLovePDF alternative'
+      description: '🔒 100% Private: Processing completely in your browser. Your files never leave your PC. ✨ AI Automation: Rename 100 PDFs automatically by content. Extract invoice data to Excel. Organize messy folders without uploading files to the internet. Secure alternative to other PDF editors with GDPR privacy guaranteed. Convert PDF to Word, Excel, PowerPoint. Create quizzes and flashcards from PDFs. All free and private.',
+      keywords: 'organize PDF, rename PDF automatic, private AI PDF, local PDF processing, secure iLovePDF alternative, extract invoice data Excel, convert PDF Word Excel, create quiz PDF, flashcards PDF, PDF processing browser, PDF without uploading files, private PDF editor, organize invoice PDF, rename 100 PDFs automatic, PDF to Excel automatic, process PDF locally'
     },
     DE: {
       title: 'PDF Wizardz - PDF-Organisator mit KI und 100% lokaler Privatsphäre',
-      description: 'Organisieren, umbenennen und verarbeiten Sie PDFs mit KI, ohne Dateien ins Internet hochzuladen. 100% Browser-Verarbeitung. DSGVO-Datenschutz garantiert.',
-      keywords: 'PDF organisieren, PDF automatisch umbenennen, private KI PDF, lokale PDF-Verarbeitung'
+      description: '🔒 100% Privat: Verarbeitung vollständig in Ihrem Browser. Ihre Dateien verlassen nie Ihren PC. ✨ KI-Automatisierung: Benennen Sie 100 PDFs automatisch nach Inhalt um. Extrahieren Sie Rechnungsdaten nach Excel. Organisieren Sie unordentliche Ordner ohne Dateien ins Internet hochzuladen. Sichere Alternative zu anderen PDF-Editoren mit DSGVO-Datenschutz garantiert. Konvertieren Sie PDF zu Word, Excel, PowerPoint. Erstellen Sie Quizze und Karteikarten aus PDFs. Alles kostenlos und privat.',
+      keywords: 'PDF organisieren, PDF automatisch umbenennen, private KI PDF, lokale PDF-Verarbeitung, sichere iLovePDF Alternative, Rechnungsdaten Excel extrahieren, PDF Word Excel konvertieren, Quiz PDF erstellen, Karteikarten PDF, PDF-Verarbeitung Browser, PDF ohne Dateien hochladen, privater PDF-Editor, Rechnungen PDF organisieren, 100 PDFs automatisch umbenennen, PDF zu Excel automatisch, PDF lokal verarbeiten'
     },
     FR: {
       title: 'PDF Wizardz - Organisateur PDF avec IA et Confidentialité 100% Locale',
-      description: 'Organisez, renommez et traitez les PDFs avec IA sans télécharger de fichiers sur Internet. Traitement 100% dans le navigateur. Confidentialité RGPD garantie.',
-      keywords: 'organiser PDF, renommer PDF automatique, IA PDF privée, traitement PDF local'
+      description: '🔒 100% Privé: Traitement complètement dans votre navigateur. Vos fichiers ne quittent jamais votre PC. ✨ Automatisation IA: Renommez 100 PDFs automatiquement par contenu. Extrayez les données de factures vers Excel. Organisez les dossiers désordonnés sans télécharger de fichiers sur Internet. Alternative sécurisée aux autres éditeurs PDF avec confidentialité RGPD garantie. Convertissez PDF en Word, Excel, PowerPoint. Créez des quiz et cartes mémoire à partir de PDFs. Tout gratuit et privé.',
+      keywords: 'organiser PDF, renommer PDF automatique, IA PDF privée, traitement PDF local, alternative sécurisée iLovePDF, extraire données facture Excel, convertir PDF Word Excel, créer quiz PDF, cartes mémoire PDF, traitement PDF navigateur, PDF sans télécharger fichiers, éditeur PDF privé, organiser factures PDF, renommer 100 PDFs automatique, PDF vers Excel automatique, traiter PDF localement'
     }
   },
   AI_ORGANIZER: {
     ES: {
       title: 'Renombrar 100 PDFs Automáticamente por Contenido con IA - PDF Wizardz',
-      description: 'Renombra masivamente archivos PDF usando IA. Extrae fecha, entidad y categoría automáticamente. Organiza carpetas desordenadas sin subir archivos a internet. Procesamiento 100% local y privado.',
-      keywords: 'renombrar PDF masivo, organizar PDF automático, renombrar 100 PDFs, IA para organizar PDF, extraer datos PDF automático'
+      description: 'Renombra masivamente archivos PDF usando IA. Extrae fecha, entidad y categoría automáticamente. Organiza carpetas desordenadas sin subir archivos a internet. Procesamiento 100% local y privado. La IA lee tus archivos, detecta fechas y entidades, y los renombra mágicamente. Perfecto para organizar facturas, contratos y documentos. Sin límite de archivos. Gratis y privado.',
+      keywords: 'renombrar PDF masivo, organizar PDF automático, renombrar 100 PDFs, IA para organizar PDF, extraer datos PDF automático, organizar facturas PDF automático, renombrar PDF por contenido, IA renombrar PDF, organizar documentos PDF, renombrar PDF masivamente, extraer fecha PDF automático, organizar carpetas PDF, procesar PDF local, renombrar PDF sin internet'
     },
     EN: {
       title: 'Rename 100 PDFs Automatically by Content with AI - PDF Wizardz',
-      description: 'Mass rename PDF files using AI. Automatically extract date, entity and category. Organize messy folders without uploading files to the internet. 100% local and private processing.',
-      keywords: 'mass rename PDF, organize PDF automatic, rename 100 PDFs, AI organize PDF, extract PDF data automatic'
+      description: 'Mass rename PDF files using AI. Automatically extract date, entity and category. Organize messy folders without uploading files to the internet. 100% local and private processing. AI reads your files, detects dates and entities, and magically renames them. Perfect for organizing invoices, contracts and documents. Unlimited files. Free and private.',
+      keywords: 'mass rename PDF, organize PDF automatic, rename 100 PDFs, AI organize PDF, extract PDF data automatic, organize invoice PDF automatic, rename PDF by content, AI rename PDF, organize document PDF, mass rename PDF, extract date PDF automatic, organize folder PDF, process PDF local, rename PDF no internet'
     },
     DE: {
       title: '100 PDFs automatisch nach Inhalt mit KI umbenennen - PDF Wizardz',
-      description: 'Benennen Sie PDF-Dateien massenhaft mit KI um. Extrahieren Sie automatisch Datum, Entität und Kategorie. Organisieren Sie unordentliche Ordner ohne Dateien ins Internet hochzuladen.',
-      keywords: 'PDF massenhaft umbenennen, PDF automatisch organisieren, 100 PDFs umbenennen'
+      description: 'Benennen Sie PDF-Dateien massenhaft mit KI um. Extrahieren Sie automatisch Datum, Entität und Kategorie. Organisieren Sie unordentliche Ordner ohne Dateien ins Internet hochzuladen. 100% lokale und private Verarbeitung. KI liest Ihre Dateien, erkennt Daten und Entitäten und benennt sie magisch um. Perfekt zum Organisieren von Rechnungen, Verträgen und Dokumenten. Unbegrenzte Dateien. Kostenlos und privat.',
+      keywords: 'PDF massenhaft umbenennen, PDF automatisch organisieren, 100 PDFs umbenennen, KI PDF organisieren, PDF Daten extrahieren automatisch, Rechnungen PDF organisieren, PDF nach Inhalt umbenennen, KI PDF umbenennen, Dokumente PDF organisieren, PDF massenhaft umbenennen, Datum PDF extrahieren automatisch, Ordner PDF organisieren, PDF lokal verarbeiten, PDF ohne Internet umbenennen'
     },
     FR: {
       title: 'Renommer 100 PDFs Automatiquement par Contenu avec IA - PDF Wizardz',
-      description: 'Renommez en masse des fichiers PDF avec IA. Extrayez automatiquement la date, l\'entité et la catégorie. Organisez des dossiers désordonnés sans télécharger de fichiers sur Internet.',
-      keywords: 'renommer PDF en masse, organiser PDF automatique, renommer 100 PDFs'
+      description: 'Renommez en masse des fichiers PDF avec IA. Extrayez automatiquement la date, l\'entité et la catégorie. Organisez des dossiers désordonnés sans télécharger de fichiers sur Internet. Traitement 100% local et privé. L\'IA lit vos fichiers, détecte les dates et les entités, et les renomme magiquement. Parfait pour organiser les factures, contrats et documents. Fichiers illimités. Gratuit et privé.',
+      keywords: 'renommer PDF en masse, organiser PDF automatique, renommer 100 PDFs, IA organiser PDF, extraire données PDF automatique, organiser factures PDF automatique, renommer PDF par contenu, IA renommer PDF, organiser documents PDF, renommer PDF massivement, extraire date PDF automatique, organiser dossiers PDF, traiter PDF local, renommer PDF sans internet'
     }
   },
   EXCEL_TEMPLATE: {
     ES: {
       title: 'Rellenar Plantillas Excel desde PDF con IA - Extraer Datos de Facturas',
-      description: 'Extrae datos de facturas PDF y rellena plantillas Excel automáticamente. Procesa múltiples facturas a la vez. Pasa datos de PDF a Excel sin subir archivos. Privacidad 100% local.',
-      keywords: 'rellenar plantilla Excel PDF, extraer datos factura Excel, pasar PDF a Excel automático, plantilla Excel facturas, datos PDF a Excel'
+      description: 'Extrae datos de facturas PDF y rellena plantillas Excel automáticamente. Procesa múltiples facturas a la vez. Pasa datos de PDF a Excel sin subir archivos. Privacidad 100% local. La IA detecta automáticamente tus variables personalizadas ({{FECHA}}, {{TOTAL}}, {{CODIGO_SWIFT}}, etc.) y busca específicamente esos campos para una extracción ultra-precisa. Rellena automáticamente manteniendo formatos y fórmulas. Perfecto para contables y empresas.',
+      keywords: 'rellenar plantilla Excel PDF, extraer datos factura Excel, pasar PDF a Excel automático, plantilla Excel facturas, datos PDF a Excel, extraer datos factura con IA, rellenar Excel desde PDF, convertir factura PDF Excel, extraer datos factura automático, plantilla Excel inteligente, procesar facturas PDF Excel, automatizar facturas Excel, extraer IVA factura PDF, rellenar modelo tributario PDF'
     },
     EN: {
       title: 'Fill Excel Templates from PDF with AI - Extract Invoice Data',
-      description: 'Extract data from invoice PDFs and automatically fill Excel templates. Process multiple invoices at once. Transfer PDF data to Excel without uploading files. 100% local privacy.',
-      keywords: 'fill Excel template PDF, extract invoice data Excel, PDF to Excel automatic, Excel template invoices, PDF data to Excel'
+      description: 'Extract data from invoice PDFs and automatically fill Excel templates. Process multiple invoices at once. Transfer PDF data to Excel without uploading files. 100% local privacy. AI automatically detects your custom variables ({{DATE}}, {{TOTAL}}, {{SWIFT_CODE}}, etc.) and specifically searches for those fields for ultra-precise extraction. Auto-fills while preserving formats and formulas. Perfect for accountants and businesses.',
+      keywords: 'fill Excel template PDF, extract invoice data Excel, PDF to Excel automatic, Excel template invoices, PDF data to Excel, extract invoice data with AI, fill Excel from PDF, convert invoice PDF Excel, extract invoice data automatic, smart Excel template, process invoice PDF Excel, automate invoice Excel, extract VAT invoice PDF, fill tax model PDF'
     },
     DE: {
       title: 'Excel-Vorlagen aus PDF mit KI ausfüllen - Rechnungsdaten extrahieren',
-      description: 'Extrahieren Sie Daten aus Rechnungs-PDFs und füllen Sie Excel-Vorlagen automatisch aus. Verarbeiten Sie mehrere Rechnungen gleichzeitig. 100% lokale Privatsphäre.',
-      keywords: 'Excel-Vorlage PDF ausfüllen, Rechnungsdaten Excel extrahieren, PDF zu Excel automatisch'
+      description: 'Extrahieren Sie Daten aus Rechnungs-PDFs und füllen Sie Excel-Vorlagen automatisch aus. Verarbeiten Sie mehrere Rechnungen gleichzeitig. 100% lokale Privatsphäre. KI erkennt automatisch Ihre benutzerdefinierten Variablen ({{DATUM}}, {{GESAMT}}, {{SWIFT_CODE}}, etc.) und sucht gezielt nach diesen Feldern für eine ultra-präzise Extraktion. Füllt automatisch aus und behält Formate und Formeln bei. Perfekt für Buchhalter und Unternehmen.',
+      keywords: 'Excel-Vorlage PDF ausfüllen, Rechnungsdaten Excel extrahieren, PDF zu Excel automatisch, Rechnungsdaten mit KI extrahieren, Excel aus PDF füllen, Rechnung PDF Excel konvertieren, Rechnungsdaten automatisch extrahieren, intelligente Excel-Vorlage, Rechnungen PDF Excel verarbeiten, Rechnungen Excel automatisieren, MwSt Rechnung PDF extrahieren, Steuermodell PDF ausfüllen'
     },
     FR: {
       title: 'Remplir Modèles Excel depuis PDF avec IA - Extraire Données de Factures',
-      description: 'Extrayez les données des factures PDF et remplissez automatiquement les modèles Excel. Traitez plusieurs factures à la fois. Confidentialité 100% locale.',
-      keywords: 'remplir modèle Excel PDF, extraire données facture Excel, PDF vers Excel automatique'
+      description: 'Extrayez les données des factures PDF et remplissez automatiquement les modèles Excel. Traitez plusieurs factures à la fois. Confidentialité 100% locale. L\'IA détecte automatiquement vos variables personnalisées ({{DATE}}, {{TOTAL}}, {{CODE_SWIFT}}, etc.) et recherche spécifiquement ces champs pour une extraction ultra-précise. Remplit automatiquement en préservant formats et formules. Parfait pour les comptables et les entreprises.',
+      keywords: 'remplir modèle Excel PDF, extraire données facture Excel, PDF vers Excel automatique, extraire données facture avec IA, remplir Excel depuis PDF, convertir facture PDF Excel, extraire données facture automatique, modèle Excel intelligent, traiter factures PDF Excel, automatiser factures Excel, extraire TVA facture PDF, remplir modèle fiscal PDF'
     }
   },
   STUDY: {
     ES: {
       title: 'Generar Exámenes y Flashcards desde PDF Gratis - PDF Wizardz',
-      description: 'Crea tests tipo examen y flashcards automáticamente desde tus PDFs. Genera preguntas de opción múltiple y tarjetas de estudio con IA. Perfecto para estudiantes y opositores. 100% gratis y privado.',
-      keywords: 'crear test PDF, generar quiz PDF, flashcards PDF automático, preguntas examen PDF, estudiar PDF con IA, resumir PDF a preguntas'
+      description: 'Crea tests tipo examen y flashcards automáticamente desde tus PDFs. Genera preguntas de opción múltiple y tarjetas de estudio con IA. Perfecto para estudiantes y opositores. 100% gratis y privado. Convierte tus apuntes en exámenes interactivos. Genera preguntas de opción múltiple desde cualquier PDF. Crea flashcards para memorizar. Todo sin subir archivos a internet.',
+      keywords: 'crear test PDF, generar quiz PDF, flashcards PDF automático, preguntas examen PDF, estudiar PDF con IA, resumir PDF a preguntas, generar examen desde PDF, crear preguntas tipo test PDF, flashcards desde PDF, quiz PDF automático, preguntas opción múltiple PDF, estudiar con PDF IA, crear examen PDF gratis, generar preguntas PDF'
     },
     EN: {
       title: 'Generate Exams and Flashcards from PDF Free - PDF Wizardz',
-      description: 'Create exam-style tests and flashcards automatically from your PDFs. Generate multiple choice questions and study cards with AI. Perfect for students and exam takers. 100% free and private.',
-      keywords: 'create test PDF, generate quiz PDF, flashcards PDF automatic, exam questions PDF, study PDF with AI'
+      description: 'Create exam-style tests and flashcards automatically from your PDFs. Generate multiple choice questions and study cards with AI. Perfect for students and exam takers. 100% free and private. Convert your notes into interactive exams. Generate multiple choice questions from any PDF. Create flashcards for memorization. All without uploading files to the internet.',
+      keywords: 'create test PDF, generate quiz PDF, flashcards PDF automatic, exam questions PDF, study PDF with AI, summarize PDF to questions, generate exam from PDF, create test questions PDF, flashcards from PDF, quiz PDF automatic, multiple choice questions PDF, study with PDF AI, create exam PDF free, generate questions PDF'
     },
     DE: {
       title: 'Prüfungen und Karteikarten aus PDF generieren - PDF Wizardz',
-      description: 'Erstellen Sie automatisch Prüfungstests und Karteikarten aus Ihren PDFs. Generieren Sie Multiple-Choice-Fragen mit KI. Perfekt für Studenten.',
-      keywords: 'Test PDF erstellen, Quiz PDF generieren, Karteikarten PDF automatisch'
+      description: 'Erstellen Sie automatisch Prüfungstests und Karteikarten aus Ihren PDFs. Generieren Sie Multiple-Choice-Fragen mit KI. Perfekt für Studenten. 100% kostenlos und privat. Konvertieren Sie Ihre Notizen in interaktive Prüfungen. Generieren Sie Multiple-Choice-Fragen aus jedem PDF. Erstellen Sie Karteikarten zum Auswendiglernen. Alles ohne Dateien ins Internet hochzuladen.',
+      keywords: 'Test PDF erstellen, Quiz PDF generieren, Karteikarten PDF automatisch, Prüfung aus PDF generieren, Testfragen PDF erstellen, Karteikarten aus PDF, Quiz PDF automatisch, Multiple-Choice-Fragen PDF, mit PDF KI studieren, Prüfung PDF kostenlos erstellen, Fragen PDF generieren'
     },
     FR: {
       title: 'Générer Examens et Cartes Mémoire depuis PDF Gratuit - PDF Wizardz',
-      description: 'Créez automatiquement des tests de type examen et des cartes mémoire à partir de vos PDFs. Générez des questions à choix multiples avec IA. 100% gratuit et privé.',
-      keywords: 'créer test PDF, générer quiz PDF, cartes mémoire PDF automatique'
+      description: 'Créez automatiquement des tests de type examen et des cartes mémoire à partir de vos PDFs. Générez des questions à choix multiples avec IA. 100% gratuit et privé. Convertissez vos notes en examens interactifs. Générez des questions à choix multiples à partir de n\'importe quel PDF. Créez des cartes mémoire pour la mémorisation. Tout sans télécharger de fichiers sur Internet.',
+      keywords: 'créer test PDF, générer quiz PDF, cartes mémoire PDF automatique, générer examen depuis PDF, créer questions type test PDF, cartes mémoire depuis PDF, quiz PDF automatique, questions choix multiples PDF, étudier avec PDF IA, créer examen PDF gratuit, générer questions PDF'
     }
   },
   MERGE: {
@@ -231,23 +231,23 @@ const seoMetadata: Record<ViewType, Record<Language, SEOMetadata>> = {
   CHAT: {
     ES: {
       title: 'Interrogador de PDFs con IA - Haz Preguntas sobre Documentos',
-      description: 'Invoca al espíritu del documento. Haz preguntas sobre el contenido del PDF y obtén respuestas precisas basadas en el texto completo. Límite: 3 preguntas por documento (gratis). Procesamiento 100% local.',
-      keywords: 'preguntar PDF, chat PDF, interrogador PDF, hacer preguntas PDF, IA conversacional PDF, preguntas sobre documentos'
+      description: 'Invoca al espíritu del documento. Haz preguntas sobre el contenido del PDF y obtén respuestas precisas basadas en el texto completo. Límite: 3 preguntas por documento (gratis). Procesamiento 100% local. Pregunta cualquier cosa sobre tu PDF. Obtén respuestas precisas basadas en el contenido completo. Sin subir archivos. Privacidad garantizada. Perfecto para analizar contratos, informes y documentos largos.',
+      keywords: 'preguntar PDF, chat PDF, interrogador PDF, hacer preguntas PDF, IA conversacional PDF, preguntas sobre documentos, analizar PDF con IA, preguntar sobre PDF, chat con PDF, IA PDF preguntas, consultar PDF IA, hacer preguntas documento PDF, analizar documento PDF, preguntas PDF gratis'
     },
     EN: {
       title: 'PDF Interrogator with AI - Ask Questions about Documents',
-      description: 'Invoke the document spirit. Ask questions about PDF content and get precise answers based on the full text. Limit: 3 questions per document (free). 100% local processing.',
-      keywords: 'ask PDF, chat PDF, PDF interrogator, ask questions PDF, conversational AI PDF, questions about documents'
+      description: 'Invoke the document spirit. Ask questions about PDF content and get precise answers based on the full text. Limit: 3 questions per document (free). 100% local processing. Ask anything about your PDF. Get precise answers based on the full content. No file uploads. Privacy guaranteed. Perfect for analyzing contracts, reports and long documents.',
+      keywords: 'ask PDF, chat PDF, PDF interrogator, ask questions PDF, conversational AI PDF, questions about documents, analyze PDF with AI, ask about PDF, chat with PDF, AI PDF questions, consult PDF AI, ask questions document PDF, analyze document PDF, questions PDF free'
     },
     DE: {
       title: 'PDF-Befrager mit KI - Stellen Sie Fragen zu Dokumenten',
-      description: 'Beschwören Sie den Geist des Dokuments. Stellen Sie Fragen zum PDF-Inhalt und erhalten Sie präzise Antworten basierend auf dem vollständigen Text. Limit: 3 Fragen pro Dokument (kostenlos).',
-      keywords: 'PDF fragen, PDF Chat, PDF Befrager, Fragen PDF stellen, konversationelle KI PDF'
+      description: 'Beschwören Sie den Geist des Dokuments. Stellen Sie Fragen zum PDF-Inhalt und erhalten Sie präzise Antworten basierend auf dem vollständigen Text. Limit: 3 Fragen pro Dokument (kostenlos). 100% lokale Verarbeitung. Stellen Sie alles über Ihr PDF. Erhalten Sie präzise Antworten basierend auf dem vollständigen Inhalt. Keine Datei-Uploads. Privatsphäre garantiert. Perfekt zum Analysieren von Verträgen, Berichten und langen Dokumenten.',
+      keywords: 'PDF fragen, PDF Chat, PDF Befrager, Fragen PDF stellen, konversationelle KI PDF, PDF mit KI analysieren, über PDF fragen, Chat mit PDF, KI PDF Fragen, PDF KI konsultieren, Fragen Dokument PDF stellen, Dokument PDF analysieren, Fragen PDF kostenlos'
     },
     FR: {
       title: 'Interrogateur de PDF avec IA - Posez des Questions sur les Documents',
-      description: 'Invoquez l\'esprit du document. Posez des questions sur le contenu du PDF et obtenez des réponses précises basées sur le texte complet. Limite: 3 questions par document (gratuit).',
-      keywords: 'demander PDF, chat PDF, interrogateur PDF, poser questions PDF, IA conversationnelle PDF'
+      description: 'Invoquez l\'esprit du document. Posez des questions sur le contenu du PDF et obtenez des réponses précises basées sur le texte complet. Limite: 3 questions par document (gratuit). Traitement 100% local. Posez n\'importe quelle question sur votre PDF. Obtenez des réponses précises basées sur le contenu complet. Aucun téléchargement de fichiers. Confidentialité garantie. Parfait pour analyser les contrats, rapports et documents longs.',
+      keywords: 'demander PDF, chat PDF, interrogateur PDF, poser questions PDF, IA conversationnelle PDF, analyser PDF avec IA, demander sur PDF, chat avec PDF, IA PDF questions, consulter PDF IA, poser questions document PDF, analyser document PDF, questions PDF gratuit'
     }
   },
   PRICING: {
