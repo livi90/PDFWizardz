@@ -1,16 +1,19 @@
 import React, { useState, useRef } from 'react';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import PixelCard from './components/PixelCard';
 import ProgressBar from './components/ProgressBar';
 import FileQueue from './components/FileQueue';
 import StudySession from './components/StudySession';
 import CookieBanner from './components/CookieBanner';
+import DonationBanner from './components/DonationBanner';
 import OracleView from './components/OracleView';
 import FeatureCard from './components/FeatureCard';
 import ChatSession from './components/ChatSession';
 import PricingPage from './components/PricingPage';
 import LandingPage from './components/LandingPage';
 import TemplateEditor from './components/TemplateEditor';
+import ToolPage from './components/ToolPage';
 import { getPremiumStatus, getFeatureAccessStatus, consumeFreeTrialUse, getPlanLimits } from './services/gumroadService';
 import { usePdfProcessor } from './hooks/usePdfProcessor';
 import { mergePdfs, imagesToPdf, splitPdf, addWatermark, convertToText, convertToImages, convertToDocx, convertToExcel, convertToPptx } from './services/pdfTools';
@@ -23,12 +26,58 @@ import { useSEO } from './hooks/useSEO';
 import { Upload, Wand2, Download, Trash2, FileText, Layers, Image as ImageIcon, Sparkles, ArrowRight, Scissors, PenTool, Type, FileStack, Repeat, FileSpreadsheet, Briefcase, GraduationCap, Scale, BookOpen, BrainCircuit, Presentation, Lock, Calculator } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<ViewType>('HOME');
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Mapeo de rutas a ViewType para SEO
+  const routeToViewType: Record<string, ViewType> = {
+    '/': 'HOME',
+    '/organizar-pdf': 'AI_ORGANIZER',
+    '/unir-pdf': 'MERGE',
+    '/dividir-pdf': 'SPLIT',
+    '/editar-pdf': 'EDIT',
+    '/convertir-pdf': 'CONVERT',
+    '/imagenes-a-pdf': 'IMG_TO_PDF',
+    '/plantillas-excel': 'EXCEL_TEMPLATE',
+    '/generar-test': 'STUDY',
+    '/mapa-mental': 'ORACLE',
+    '/chat-pdf': 'CHAT',
+    '/precios': 'PRICING',
+    '/editor-plantillas': 'TEMPLATE_EDITOR',
+    '/facturas-excel': 'LANDING_FACTURAS_EXCEL',
+    '/generador-test': 'LANDING_GENERADOR_TEST',
+    '/modelo-tributario': 'LANDING_MODELO_TRIBUTARIO',
+  };
+  
+  const currentView = routeToViewType[location.pathname] || 'HOME';
   const [lang, setLang] = useState<Language>('ES');
   const t = getTranslation(lang);
   
   // SEO: Actualizar título y meta tags según la vista
   useSEO(currentView, lang);
+  
+  // Helper para navegar
+  const setCurrentView = (view: ViewType) => {
+    const viewToRoute: Record<ViewType, string> = {
+      'HOME': '/',
+      'AI_ORGANIZER': '/organizar-pdf',
+      'MERGE': '/unir-pdf',
+      'SPLIT': '/dividir-pdf',
+      'EDIT': '/editar-pdf',
+      'CONVERT': '/convertir-pdf',
+      'IMG_TO_PDF': '/imagenes-a-pdf',
+      'EXCEL_TEMPLATE': '/plantillas-excel',
+      'STUDY': '/generar-test',
+      'ORACLE': '/mapa-mental',
+      'CHAT': '/chat-pdf',
+      'PRICING': '/precios',
+      'TEMPLATE_EDITOR': '/editor-plantillas',
+      'LANDING_FACTURAS_EXCEL': '/facturas-excel',
+      'LANDING_GENERADOR_TEST': '/generador-test',
+      'LANDING_MODELO_TRIBUTARIO': '/modelo-tributario',
+    };
+    navigate(viewToRoute[view] || '/');
+  };
   
   // AI Processor State
   const { 
@@ -232,7 +281,7 @@ const App: React.FC = () => {
           const text = await extractTextFromPdf(toolFiles[0], Infinity);
           setChatPdfText(text);
           setChatPdfFileName(toolFiles[0].name);
-          setCurrentView('CHAT');
+          navigate('/chat-pdf');
       } catch (e: any) {
           alert(lang === 'ES' ? "Error extrayendo texto: " + e.message : "Error extracting text: " + e.message);
       } finally {
@@ -271,7 +320,7 @@ const App: React.FC = () => {
           alert(lang === 'ES' 
               ? 'Has agotado tus 3 usos gratuitos de Plantillas Excel. ¡Actualiza a Premium para continuar!' 
               : 'You have exhausted your 3 free uses of Excel Templates. Upgrade to Premium to continue!');
-          setCurrentView('PRICING');
+          navigate('/precios');
           return;
       }
 
@@ -282,7 +331,7 @@ const App: React.FC = () => {
               alert(lang === 'ES' 
                   ? 'Has agotado tus 3 usos gratuitos de Plantillas Excel. ¡Actualiza a Premium para continuar!' 
                   : 'You have exhausted your 3 free uses of Excel Templates. Upgrade to Premium to continue!');
-              setCurrentView('PRICING');
+              navigate('/precios');
               return;
           }
       }
@@ -376,7 +425,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                    <button 
-                     onClick={() => setCurrentView('CHAT')}
+                     onClick={() => navigate('/chat-pdf')}
                      className="bg-indigo-600 text-white text-xl px-8 py-3 border-4 border-black retro-shadow hover:bg-indigo-500 hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all font-bold font-vt323"
                    >
                      {t.startBtn}
@@ -463,7 +512,7 @@ const App: React.FC = () => {
             <div className="grid md:grid-cols-3 gap-6">
                {/* Landing Page 1: Facturas a Excel */}
                <div 
-                  onClick={() => setCurrentView('LANDING_FACTURAS_EXCEL')}
+                  onClick={() => navigate('/facturas-excel')}
                   className="bg-emerald-900/30 border-4 border-emerald-500 rounded-lg p-6 cursor-pointer hover:bg-emerald-900/50 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(16,185,129,0.5)]"
                >
                   <div className="flex items-center gap-3 mb-4">
@@ -488,7 +537,7 @@ const App: React.FC = () => {
 
                {/* Landing Page 2: Generador de Test */}
                <div 
-                  onClick={() => setCurrentView('LANDING_GENERADOR_TEST')}
+                  onClick={() => navigate('/generador-test')}
                   className="bg-indigo-900/30 border-4 border-indigo-500 rounded-lg p-6 cursor-pointer hover:bg-indigo-900/50 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(99,102,241,0.5)]"
                >
                   <div className="flex items-center gap-3 mb-4">
@@ -513,7 +562,7 @@ const App: React.FC = () => {
 
                {/* Landing Page 3: Modelo Tributario */}
                <div 
-                  onClick={() => setCurrentView('LANDING_MODELO_TRIBUTARIO')}
+                  onClick={() => navigate('/modelo-tributario')}
                   className="bg-purple-900/30 border-4 border-purple-500 rounded-lg p-6 cursor-pointer hover:bg-purple-900/50 transition-all hover:scale-105 hover:shadow-[0_0_20px_rgba(168,85,247,0.5)]"
                >
                   <div className="flex items-center gap-3 mb-4">
@@ -551,7 +600,7 @@ const App: React.FC = () => {
                      title={t.excelTemplateTitle}
                      description={t.excelTemplateDesc}
                      shortDescription="Rellena plantillas Excel desde PDFs automáticamente."
-                     onClick={() => setCurrentView('EXCEL_TEMPLATE')}
+                     onClick={() => navigate('/plantillas-excel')}
                      icon={FileSpreadsheet}
                      color="bg-emerald-900"
                      badge="B2B"
@@ -565,7 +614,7 @@ const App: React.FC = () => {
                      title={t.templateEditorTitle}
                      description={t.templateEditorDesc}
                      shortDescription="Editor de plantillas Excel - Inserta runas (variables) sin Excel instalado."
-                     onClick={() => setCurrentView('TEMPLATE_EDITOR')}
+                     onClick={() => navigate('/editor-plantillas')}
                      icon={Sparkles}
                      color="bg-purple-900"
                      badge="NEW"
@@ -579,7 +628,7 @@ const App: React.FC = () => {
                      title={t.aiTitle}
                      description={t.aiDesc}
                      shortDescription="Renombra PDFs automáticamente por contenido con IA."
-                     onClick={() => setCurrentView('AI_ORGANIZER')}
+                     onClick={() => navigate('/organizar-pdf')}
                      icon={Sparkles}
                      color="bg-indigo-900"
                      tags="Renombrar masivo • Organizar facturas • Procesamiento local"
@@ -592,7 +641,7 @@ const App: React.FC = () => {
                      title={t.studyTitle}
                      description={t.studyDesc}
                      shortDescription="Crea test tipo examen y flashcards automáticamente desde PDFs."
-                     onClick={() => setCurrentView('STUDY')}
+                     onClick={() => navigate('/generar-test')}
                      icon={BrainCircuit}
                      color="bg-yellow-900"
                      badge="NEW"
@@ -606,7 +655,7 @@ const App: React.FC = () => {
                      title={t.oracleTitle}
                      description={t.oracleDesc}
                      shortDescription="Genera mapas mentales interactivos desde PDFs."
-                     onClick={() => setCurrentView('ORACLE')}
+                     onClick={() => navigate('/mapa-mental')}
                      icon={BrainCircuit}
                      color="bg-violet-900"
                      badge="NEW"
@@ -620,7 +669,7 @@ const App: React.FC = () => {
                      title={t.chatTitle}
                      description={t.chatDesc}
                      shortDescription="Haz preguntas sobre el contenido del PDF y obtén respuestas precisas."
-                     onClick={() => setCurrentView('CHAT')}
+                     onClick={() => navigate('/chat-pdf')}
                      icon={FileText}
                      color="bg-purple-900"
                      badge="NEW"
@@ -642,7 +691,7 @@ const App: React.FC = () => {
                            title={t.excelTemplateTitle}
                            description={t.excelTemplateDesc}
                            shortDescription="Rellena plantillas Excel desde PDFs automáticamente."
-                           onClick={() => setCurrentView('EXCEL_TEMPLATE')}
+                           onClick={() => navigate('/plantillas-excel')}
                            icon={FileSpreadsheet}
                            color="bg-emerald-900"
                            badge="B2B"
@@ -656,7 +705,7 @@ const App: React.FC = () => {
                            title={t.templateEditorTitle}
                            description={t.templateEditorDesc}
                            shortDescription="Editor de plantillas Excel - Inserta runas (variables) sin Excel instalado."
-                           onClick={() => setCurrentView('TEMPLATE_EDITOR')}
+                           onClick={() => navigate('/editor-plantillas')}
                            icon={Sparkles}
                            color="bg-purple-900"
                            badge="NEW"
@@ -670,7 +719,7 @@ const App: React.FC = () => {
                            title={t.aiTitle}
                            description={t.aiDesc}
                            shortDescription="Renombra PDFs automáticamente por contenido con IA."
-                           onClick={() => setCurrentView('AI_ORGANIZER')}
+                           onClick={() => navigate('/organizar-pdf')}
                            icon={Sparkles}
                            color="bg-indigo-900"
                            tags="Renombrar masivo • Organizar facturas • Procesamiento local"
@@ -690,7 +739,7 @@ const App: React.FC = () => {
                            title={t.studyTitle}
                            description={t.studyDesc}
                            shortDescription="Crea test tipo examen y flashcards automáticamente desde PDFs."
-                           onClick={() => setCurrentView('STUDY')}
+                           onClick={() => navigate('/generar-test')}
                            icon={BrainCircuit}
                            color="bg-yellow-900"
                            badge="NEW"
@@ -704,7 +753,7 @@ const App: React.FC = () => {
                            title={t.oracleTitle}
                            description={t.oracleDesc}
                            shortDescription="Genera mapas mentales interactivos desde PDFs."
-                           onClick={() => setCurrentView('ORACLE')}
+                           onClick={() => navigate('/mapa-mental')}
                            icon={BrainCircuit}
                            color="bg-violet-900"
                            badge="NEW"
@@ -718,7 +767,7 @@ const App: React.FC = () => {
                            title={t.chatTitle}
                            description={t.chatDesc}
                            shortDescription="Haz preguntas sobre el contenido del PDF y obtén respuestas precisas."
-                           onClick={() => setCurrentView('CHAT')}
+                           onClick={() => navigate('/chat-pdf')}
                            icon={FileText}
                            color="bg-purple-900"
                            badge="NEW"
@@ -843,7 +892,7 @@ const App: React.FC = () => {
     
     return (
       <div className="max-w-4xl w-full mx-auto p-4 md:p-8">
-        <div className="mb-6 flex items-center gap-2 text-indigo-400 cursor-pointer hover:underline" onClick={() => setCurrentView('HOME')}>
+        <div className="mb-6 flex items-center gap-2 text-indigo-400 cursor-pointer hover:underline" onClick={() => navigate('/')}>
             <ArrowRight className="transform rotate-180" /> {t.back}
         </div>
         
@@ -936,104 +985,191 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col font-vt323 bg-[#111827] text-gray-200">
-      <Navbar currentView={currentView} setView={setCurrentView} lang={lang} setLang={setLang} t={t} />
+      <Navbar lang={lang} setLang={setLang} t={t} />
       
       <main className="flex-1 w-full">
-         {currentView === 'HOME' && renderHome()}
-         {currentView === 'AI_ORGANIZER' && renderAiOrganizer()}
-         
-         {currentView === 'MERGE' && renderSimpleTool(t.mergeTitle, t.mergeDesc, ".pdf", t.mergeTitle, executeMerge, 'green')}
-         
-         {currentView === 'IMG_TO_PDF' && renderSimpleTool(t.imgTitle, t.imgDesc, "image/*", t.convertTitle, executeImgToPdf, 'yellow', (
-             <label className="flex items-center justify-center gap-2 bg-amber-900/30 p-2 border border-amber-800 text-amber-200">
-                 <input type="checkbox" checked={fitToA4} onChange={(e) => setFitToA4(e.target.checked)} className="w-5 h-5 accent-amber-500" />
-                 <span className="font-bold">A4 Fit</span>
-             </label>
-         ))}
+        <Routes>
+          <Route path="/" element={renderHome()} />
+          <Route path="/organizar-pdf" element={renderAiOrganizer()} />
+          
+          <Route path="/unir-pdf" element={
+            <ToolPage
+              title={t.mergeTitle}
+              desc={t.mergeDesc}
+              accept=".pdf"
+              actionLabel={t.mergeTitle}
+              onAction={executeMerge}
+              color="green"
+              toolFiles={toolFiles}
+              setToolFiles={setToolFiles}
+              isToolProcessing={isToolProcessing}
+              handleToolFileChange={handleToolFileChange}
+              toolInputRef={toolInputRef}
+              toolKey="merge"
+              lang={lang}
+            />
+          } />
+          
+          <Route path="/imagenes-a-pdf" element={
+            <ToolPage
+              title={t.imgTitle}
+              desc={t.imgDesc}
+              accept="image/*"
+              actionLabel={t.convertTitle}
+              onAction={executeImgToPdf}
+              color="yellow"
+              extraControls={
+                <label className="flex items-center justify-center gap-2 bg-amber-900/30 p-2 border border-amber-800 text-amber-200">
+                  <input type="checkbox" checked={fitToA4} onChange={(e) => setFitToA4(e.target.checked)} className="w-5 h-5 accent-amber-500" />
+                  <span className="font-bold">A4 Fit</span>
+                </label>
+              }
+              toolFiles={toolFiles}
+              setToolFiles={setToolFiles}
+              isToolProcessing={isToolProcessing}
+              handleToolFileChange={handleToolFileChange}
+              toolInputRef={toolInputRef}
+              toolKey="imagesToPdf"
+              lang={lang}
+            />
+          } />
 
-         {currentView === 'SPLIT' && renderSimpleTool(t.splitTitle, t.splitDesc, ".pdf", splitRange ? "EXTRACT" : "ZIP SPLIT", executeSplit, 'red', (
-             <div className="bg-rose-900/30 p-4 border border-rose-800 text-left">
-                 <label className="text-rose-300 font-bold block mb-1">Pages (Opt):</label>
-                 <input type="text" value={splitRange} onChange={(e) => setSplitRange(e.target.value)} placeholder="1-5, 8" className="border-2 border-black bg-gray-900 text-white p-2 w-full font-bold focus:border-rose-500 outline-none" />
-             </div>
-         ), 1)}
+          <Route path="/dividir-pdf" element={
+            <ToolPage
+              title={t.splitTitle}
+              desc={t.splitDesc}
+              accept=".pdf"
+              actionLabel={splitRange ? "EXTRACT" : "ZIP SPLIT"}
+              onAction={executeSplit}
+              color="red"
+              extraControls={
+                <div className="bg-rose-900/30 p-4 border border-rose-800 text-left">
+                  <label className="text-rose-300 font-bold block mb-1">Pages (Opt):</label>
+                  <input type="text" value={splitRange} onChange={(e) => setSplitRange(e.target.value)} placeholder="1-5, 8" className="border-2 border-black bg-gray-900 text-white p-2 w-full font-bold focus:border-rose-500 outline-none" />
+                </div>
+              }
+              maxFiles={1}
+              toolFiles={toolFiles}
+              setToolFiles={setToolFiles}
+              isToolProcessing={isToolProcessing}
+              handleToolFileChange={handleToolFileChange}
+              toolInputRef={toolInputRef}
+              toolKey="split"
+              lang={lang}
+            />
+          } />
 
-         {currentView === 'EDIT' && renderSimpleTool(t.editTitle, t.editDesc, ".pdf", t.editTitle, executeEdit, 'blue', (
-             <div className="bg-purple-900/30 p-4 border border-purple-800 space-y-4">
-                 <div className="flex flex-col md:flex-row gap-4">
+          <Route path="/editar-pdf" element={
+            <ToolPage
+              title={t.editTitle}
+              desc={t.editDesc}
+              accept=".pdf"
+              actionLabel={t.editTitle}
+              onAction={executeEdit}
+              color="blue"
+              extraControls={
+                <div className="bg-purple-900/30 p-4 border border-purple-800 space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4">
                     <div className="flex-1 space-y-2">
-                        <label className="text-purple-300 font-bold">Text Watermark:</label>
-                        <div className="flex gap-2">
-                            <input type="text" value={watermarkText} onChange={(e) => setWatermarkText(e.target.value)} placeholder="Confidential..." className="border-2 border-black bg-gray-900 text-white p-2 flex-1 font-bold focus:border-purple-500 outline-none" />
-                            <div className="flex gap-1">
-                                {['red', 'blue', 'green', 'white'].map(c => <div key={c} onClick={() => setTextColor(c)} className={`w-8 h-8 cursor-pointer border-2 border-black ${textColor === c ? 'ring-2 ring-gray-400' : ''}`} style={{ backgroundColor: c }} />)}
-                            </div>
+                      <label className="text-purple-300 font-bold">Text Watermark:</label>
+                      <div className="flex gap-2">
+                        <input type="text" value={watermarkText} onChange={(e) => setWatermarkText(e.target.value)} placeholder="Confidential..." className="border-2 border-black bg-gray-900 text-white p-2 flex-1 font-bold focus:border-purple-500 outline-none" />
+                        <div className="flex gap-1">
+                          {['red', 'blue', 'green', 'white'].map(c => <div key={c} onClick={() => setTextColor(c)} className={`w-8 h-8 cursor-pointer border-2 border-black ${textColor === c ? 'ring-2 ring-gray-400' : ''}`} style={{ backgroundColor: c }} />)}
                         </div>
+                      </div>
                     </div>
                     <div className="flex-1 space-y-2">
-                        <label className="text-purple-300 font-bold">Image Overlay (Logo):</label>
-                        <input 
-                            type="file" 
-                            accept="image/png, image/jpeg" 
-                            onChange={(e) => setOverlayImage(e.target.files?.[0] || null)} 
-                            ref={imgInputRef}
-                            className="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-bold file:bg-purple-700 file:text-white hover:file:bg-purple-600"
-                        />
-                        {overlayImage && (
-                            <div className="flex items-center gap-2">
-                                <input type="range" min="10" max="100" value={imgScale} onChange={(e) => setImgScale(Number(e.target.value))} className="flex-1" />
-                                <span className="text-xs">{imgScale}%</span>
-                                <select value={imgPos} onChange={(e) => setImgPos(e.target.value as any)} className="bg-gray-900 border border-gray-700 text-xs p-1">
-                                    <option value="center">Center</option>
-                                    <option value="tl">Top-Left</option>
-                                    <option value="tr">Top-Right</option>
-                                    <option value="bl">Bot-Left</option>
-                                    <option value="br">Bot-Right</option>
-                                </select>
-                            </div>
-                        )}
+                      <label className="text-purple-300 font-bold">Image Overlay (Logo):</label>
+                      <input 
+                        type="file" 
+                        accept="image/png, image/jpeg" 
+                        onChange={(e) => setOverlayImage(e.target.files?.[0] || null)} 
+                        ref={imgInputRef}
+                        className="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-bold file:bg-purple-700 file:text-white hover:file:bg-purple-600"
+                      />
+                      {overlayImage && (
+                        <div className="flex items-center gap-2">
+                          <input type="range" min="10" max="100" value={imgScale} onChange={(e) => setImgScale(Number(e.target.value))} className="flex-1" />
+                          <span className="text-xs">{imgScale}%</span>
+                          <select value={imgPos} onChange={(e) => setImgPos(e.target.value as any)} className="bg-gray-900 border border-gray-700 text-xs p-1">
+                            <option value="center">Center</option>
+                            <option value="tl">Top-Left</option>
+                            <option value="tr">Top-Right</option>
+                            <option value="bl">Bot-Left</option>
+                            <option value="br">Bot-Right</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
-                 </div>
+                  </div>
+                  <div className="flex gap-4 items-center pt-2 border-t border-purple-800">
+                    <select value={watermarkPos} onChange={(e) => setWatermarkPos(e.target.value as any)} className="border-2 border-black bg-gray-900 text-white p-1 font-bold">
+                      <option value="diagonal">Diagonal</option>
+                      <option value="top">Top</option>
+                      <option value="bottom">Bottom</option>
+                    </select>
+                    <label className="flex items-center gap-2 font-bold text-purple-300"><input type="checkbox" checked={addPageNums} onChange={(e) => setAddPageNums(e.target.checked)} className="w-5 h-5 accent-purple-500" /> Page Nums</label>
+                  </div>
+                </div>
+              }
+              maxFiles={1}
+              toolFiles={toolFiles}
+              setToolFiles={setToolFiles}
+              isToolProcessing={isToolProcessing}
+              handleToolFileChange={handleToolFileChange}
+              toolInputRef={toolInputRef}
+              toolKey="edit"
+              lang={lang}
+            />
+          } />
 
-                 <div className="flex gap-4 items-center pt-2 border-t border-purple-800">
-                     <select value={watermarkPos} onChange={(e) => setWatermarkPos(e.target.value as any)} className="border-2 border-black bg-gray-900 text-white p-1 font-bold">
-                         <option value="diagonal">Diagonal</option>
-                         <option value="top">Top</option>
-                         <option value="bottom">Bottom</option>
-                     </select>
-                     <label className="flex items-center gap-2 font-bold text-purple-300"><input type="checkbox" checked={addPageNums} onChange={(e) => setAddPageNums(e.target.checked)} className="w-5 h-5 accent-purple-500" /> Page Nums</label>
-                 </div>
-             </div>
-         ), 1)}
+          <Route path="/convertir-pdf" element={
+            <ToolPage
+              title={t.convertTitle}
+              desc={t.convertDesc}
+              accept=".pdf"
+              actionLabel={t.convertTitle}
+              onAction={executeConvert}
+              color="pink"
+              extraControls={
+                <div className="flex flex-col gap-4 bg-pink-900/30 p-4 border border-pink-800">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    <button onClick={() => setConvertFormat('DOCX')} className={`flex flex-col items-center p-2 border-2 border-black font-bold transition-all ${convertFormat === 'DOCX' ? 'bg-blue-600 text-white transform -translate-y-1 retro-shadow' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+                      <FileText className="mb-1" /> WORD
+                    </button>
+                    <button onClick={() => setConvertFormat('XLSX')} className={`flex flex-col items-center p-2 border-2 border-black font-bold transition-all ${convertFormat === 'XLSX' ? 'bg-emerald-600 text-white transform -translate-y-1 retro-shadow' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+                      <FileSpreadsheet className="mb-1" /> EXCEL
+                    </button>
+                    <button onClick={() => setConvertFormat('PPTX')} className={`flex flex-col items-center p-2 border-2 border-black font-bold transition-all ${convertFormat === 'PPTX' ? 'bg-orange-600 text-white transform -translate-y-1 retro-shadow' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+                      <Presentation className="mb-1" /> PPTX
+                    </button>
+                    <button onClick={() => setConvertFormat('JPG')} className={`flex flex-col items-center p-2 border-2 border-black font-bold transition-all ${convertFormat === 'JPG' ? 'bg-pink-600 text-white transform -translate-y-1 retro-shadow' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+                      <ImageIcon className="mb-1" /> JPG
+                    </button>
+                    <button onClick={() => setConvertFormat('TXT')} className={`flex flex-col items-center p-2 border-2 border-black font-bold transition-all ${convertFormat === 'TXT' ? 'bg-gray-600 text-white transform -translate-y-1 retro-shadow' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+                      <FileText className="mb-1" /> TXT
+                    </button>
+                  </div>
+                </div>
+              }
+              maxFiles={1}
+              toolFiles={toolFiles}
+              setToolFiles={setToolFiles}
+              isToolProcessing={isToolProcessing}
+              handleToolFileChange={handleToolFileChange}
+              toolInputRef={toolInputRef}
+              toolKey="convert"
+              lang={lang}
+            />
+          } />
 
-         {currentView === 'CONVERT' && renderSimpleTool(t.convertTitle, t.convertDesc, ".pdf", t.convertTitle, executeConvert, 'pink', (
-             <div className="flex flex-col gap-4 bg-pink-900/30 p-4 border border-pink-800">
-                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                     <button onClick={() => setConvertFormat('DOCX')} className={`flex flex-col items-center p-2 border-2 border-black font-bold transition-all ${convertFormat === 'DOCX' ? 'bg-blue-600 text-white transform -translate-y-1 retro-shadow' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
-                         <FileText className="mb-1" /> WORD
-                     </button>
-                     <button onClick={() => setConvertFormat('XLSX')} className={`flex flex-col items-center p-2 border-2 border-black font-bold transition-all ${convertFormat === 'XLSX' ? 'bg-emerald-600 text-white transform -translate-y-1 retro-shadow' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
-                         <FileSpreadsheet className="mb-1" /> EXCEL
-                     </button>
-                     <button onClick={() => setConvertFormat('PPTX')} className={`flex flex-col items-center p-2 border-2 border-black font-bold transition-all ${convertFormat === 'PPTX' ? 'bg-orange-600 text-white transform -translate-y-1 retro-shadow' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
-                         <Presentation className="mb-1" /> PPTX
-                     </button>
-                     <button onClick={() => setConvertFormat('JPG')} className={`flex flex-col items-center p-2 border-2 border-black font-bold transition-all ${convertFormat === 'JPG' ? 'bg-pink-600 text-white transform -translate-y-1 retro-shadow' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
-                         <ImageIcon className="mb-1" /> JPG
-                     </button>
-                     <button onClick={() => setConvertFormat('TXT')} className={`flex flex-col items-center p-2 border-2 border-black font-bold transition-all ${convertFormat === 'TXT' ? 'bg-gray-600 text-white transform -translate-y-1 retro-shadow' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
-                         <FileText className="mb-1" /> TXT
-                     </button>
-                 </div>
-             </div>
-         ), 1)}
-
-         {/* STUDY MODE */}
-         {currentView === 'EXCEL_TEMPLATE' && (() => {
+          {/* Rutas para otras vistas */}
+          <Route path="/plantillas-excel" element={(() => {
             const accessStatus = getFeatureAccessStatus('excel_template');
             return (
             <div className="max-w-3xl w-full mx-auto p-4 md:p-8">
-                <div className="mb-6 flex items-center gap-2 text-gray-500 cursor-pointer hover:underline" onClick={() => setCurrentView('HOME')}>
+                <div className="mb-6 flex items-center gap-2 text-gray-500 cursor-pointer hover:underline" onClick={() => navigate('/')}>
                     <ArrowRight className="transform rotate-180" /> {t.back}
                 </div>
                 <div className="text-center mb-8">
@@ -1061,7 +1197,7 @@ const App: React.FC = () => {
                         </div>
                         {!accessStatus.isPremium && (
                             <button
-                                onClick={() => setCurrentView('PRICING')}
+                                onClick={() => navigate('/precios')}
                                 className="px-4 py-2 bg-yellow-600 text-black font-bold border-2 border-yellow-500 hover:bg-yellow-500 transition-colors"
                             >
                                 {t.pricingActivateLicense || 'ACTIVAR PREMIUM'}
@@ -1398,9 +1534,9 @@ const App: React.FC = () => {
                 </PixelCard>
             </div>
             );
-         })()}
+         })()} />
 
-         {currentView === 'STUDY' && (
+          <Route path="/generar-test" element={(
              studyMaterial ? (
                  <div className="max-w-4xl mx-auto p-8">
                      <StudySession 
@@ -1429,9 +1565,9 @@ const App: React.FC = () => {
                     </div>
                 ), 1)
              )
-         )}
+          )} />
 
-         {currentView === 'ORACLE' && (
+          <Route path="/mapa-mental" element={(
              mindMapData ? (
                  <OracleView 
                     mindMapData={mindMapData} 
@@ -1441,43 +1577,43 @@ const App: React.FC = () => {
              ) : (
                 renderSimpleTool(t.oracleTitle, t.oracleDesc, ".pdf", lang === 'ES' ? "GENERAR MAPA MENTAL" : "GENERATE MIND MAP", executeOracle, 'blue', undefined, 1)
              )
-         )}
+          )} />
 
-         {currentView === 'CHAT' && (
+          <Route path="/chat-pdf" element={(
              chatPdfText ? (
                  <ChatSession 
                     pdfText={chatPdfText}
                     pdfFileName={chatPdfFileName}
-                    onClose={() => { setChatPdfText(''); setChatPdfFileName(''); setToolFiles([]); setCurrentView('HOME'); }}
+                    onClose={() => { setChatPdfText(''); setChatPdfFileName(''); setToolFiles([]); navigate('/'); }}
                     lang={lang}
                     isPremium={isPremium}
                  />
              ) : (
                 renderSimpleTool(t.chatTitle, t.chatDesc, ".pdf", lang === 'ES' ? "INVOCAR ESPÍRITU" : "INVOKE SPIRIT", executeChat, 'pink', undefined, 1)
              )
-         )}
+          )} />
 
-         {currentView === 'PRICING' && (
+          <Route path="/precios" element={
              <PricingPage
                 lang={lang}
                 isPremium={isPremium}
                 onPremiumActivated={() => {
                     setIsPremium(true);
-                    setCurrentView('HOME');
+                    navigate('/');
                 }}
-                onGoToHome={() => setCurrentView('HOME')}
+                onGoToHome={() => navigate('/')}
              />
-         )}
+          } />
 
-         {currentView === 'TEMPLATE_EDITOR' && (
+          <Route path="/editor-plantillas" element={
              <TemplateEditor
                 lang={lang}
-                onGoToHome={() => setCurrentView('HOME')}
+                onGoToHome={() => navigate('/')}
              />
-         )}
+          } />
 
-         {/* Landing Pages SEO */}
-         {currentView === 'LANDING_FACTURAS_EXCEL' && (
+          {/* Landing Pages SEO */}
+          <Route path="/facturas-excel" element={
              <LandingPage
                 lang={lang}
                 viewType="LANDING_FACTURAS_EXCEL"
@@ -1556,14 +1692,14 @@ const App: React.FC = () => {
                     'Résultats instantanés sans attente'
                 ]}
                 ctaText={lang === 'ES' ? 'PROBAR GRATIS AHORA' : lang === 'EN' ? 'TRY FREE NOW' : lang === 'DE' ? 'JETZT KOSTENLOS TESTEN' : 'ESSAYER GRATUITEMENT'}
-                ctaAction={() => setCurrentView('EXCEL_TEMPLATE')}
-                onGoToHome={() => setCurrentView('HOME')}
+                ctaAction={() => navigate('/plantillas-excel')}
+                onGoToHome={() => navigate('/')}
                 icon={<FileSpreadsheet className="w-10 h-10 text-emerald-400" />}
                 color="emerald"
              />
-         )}
+          } />
 
-         {currentView === 'LANDING_GENERADOR_TEST' && (
+          <Route path="/generador-test" element={
              <LandingPage
                 lang={lang}
                 viewType="LANDING_GENERADOR_TEST"
@@ -1642,14 +1778,14 @@ const App: React.FC = () => {
                     'Exportez vos examens et cartes mémoire'
                 ]}
                 ctaText={lang === 'ES' ? 'CREAR MI PRIMER EXAMEN' : lang === 'EN' ? 'CREATE MY FIRST EXAM' : lang === 'DE' ? 'MEINE ERSTE PRÜFUNG ERSTELLEN' : 'CRÉER MON PREMIER EXAMEN'}
-                ctaAction={() => setCurrentView('STUDY')}
-                onGoToHome={() => setCurrentView('HOME')}
+                ctaAction={() => navigate('/generar-test')}
+                onGoToHome={() => navigate('/')}
                 icon={<FileText className="w-10 h-10 text-indigo-400" />}
                 color="indigo"
              />
-         )}
+          } />
 
-         {currentView === 'LANDING_MODELO_TRIBUTARIO' && (
+          <Route path="/modelo-tributario" element={
              <LandingPage
                 lang={lang}
                 viewType="LANDING_MODELO_TRIBUTARIO"
@@ -1728,13 +1864,13 @@ const App: React.FC = () => {
                     'Résultats précis et vérifiables'
                 ]}
                 ctaText={lang === 'ES' ? 'AUTOMATIZAR MI MODELO TRIBUTARIO' : lang === 'EN' ? 'AUTOMATE MY TAX MODEL' : lang === 'DE' ? 'MEIN STEUERMODELL AUTOMATISIEREN' : 'AUTOMATISER MON MODÈLE FISCAL'}
-                ctaAction={() => setCurrentView('EXCEL_TEMPLATE')}
-                onGoToHome={() => setCurrentView('HOME')}
+                ctaAction={() => navigate('/plantillas-excel')}
+                onGoToHome={() => navigate('/')}
                 icon={<Calculator className="w-10 h-10 text-purple-400" />}
                 color="purple"
              />
-         )}
-
+          } />
+        </Routes>
       </main>
 
       <footer className="text-center py-8 text-gray-600 border-t-2 border-black mt-auto bg-gray-900">
@@ -1767,6 +1903,7 @@ const App: React.FC = () => {
       </footer>
       
       <CookieBanner lang={lang} />
+      <DonationBanner lang={lang} />
     </div>
   );
 };

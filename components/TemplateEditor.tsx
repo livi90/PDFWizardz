@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { Language } from '../types';
 import { getTranslation } from '../services/translations';
-import { ArrowRight, Download, Upload, Sparkles, X, Search, Trash2, FileText, ZoomIn, ZoomOut, List, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, Download, Upload, Sparkles, X, Search, Trash2, FileText, ZoomIn, ZoomOut, List, ChevronLeft, ChevronRight, Plus, Rows, Columns } from 'lucide-react';
 import saveAs from 'file-saver';
 
 interface TemplateEditorProps {
@@ -90,10 +90,27 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
     const ws = wb.Sheets[sheet];
     setWorksheet(ws);
     
-    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    const existingRange = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null;
+    
+    // Definir rango mínimo y máximo para mostrar
+    // Si hay datos, usar el rango existente, pero asegurar mínimo de 20 filas x 10 columnas
+    const minRows = 20;
+    const minCols = 10;
+    
+    const range = existingRange ? {
+      s: { r: 0, c: 0 },
+      e: { 
+        r: Math.max(existingRange.e.r, minRows - 1), 
+        c: Math.max(existingRange.e.c, minCols - 1) 
+      }
+    } : {
+      s: { r: 0, c: 0 },
+      e: { r: minRows - 1, c: minCols - 1 }
+    };
+    
     const grid: CellData[][] = [];
     
-    // Crear grid con datos
+    // Crear grid con datos (incluyendo celdas vacías)
     for (let row = range.s.r; row <= range.e.r; row++) {
       const rowData: CellData[] = [];
       for (let col = range.s.c; col <= range.e.c; col++) {
@@ -109,6 +126,11 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
         });
       }
       grid.push(rowData);
+    }
+    
+    // Actualizar el rango del worksheet si es necesario
+    if (!ws['!ref'] || existingRange) {
+      ws['!ref'] = XLSX.utils.encode_range(range);
     }
     
     setCells(grid);
@@ -167,8 +189,48 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
     
     // Actualizar grid visual
     const newCells = [...cells];
-    if (newCells[row] && newCells[row][col]) {
-      newCells[row][col].value = value;
+    // Asegurar que la fila y columna existan
+    while (newCells.length <= row) {
+      const numCols = newCells[0]?.length || 10;
+      const newRow: CellData[] = [];
+      for (let c = 0; c < numCols; c++) {
+        newRow.push({
+          value: '',
+          address: XLSX.utils.encode_cell({ r: newCells.length, c }),
+          row: newCells.length,
+          col: c
+        });
+      }
+      newCells.push(newRow);
+    }
+    
+    if (newCells[row]) {
+      // Asegurar que la columna exista
+      while (newCells[row].length <= col) {
+        newCells[row].push({
+          value: '',
+          address: XLSX.utils.encode_cell({ r: row, c: newCells[row].length }),
+          row,
+          col: newCells[row].length
+        });
+      }
+      
+      if (newCells[row][col]) {
+        newCells[row][col].value = value;
+        newCells[row][col].address = cellAddress;
+      }
+      
+      // Actualizar rango del worksheet si es necesario
+      const currentRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+      const newRange = {
+        s: { r: 0, c: 0 },
+        e: { 
+          r: Math.max(currentRange.e.r, row), 
+          c: Math.max(currentRange.e.c, col) 
+        }
+      };
+      worksheet['!ref'] = XLSX.utils.encode_range(newRange);
+      
       setCells(newCells);
     }
     
@@ -219,6 +281,242 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
     if (!selectedCell) return;
     updateCell(selectedCell.row, selectedCell.col, '');
     setSelectedCell(null);
+  };
+
+  // Insertar fila arriba de la seleccionada
+  const insertRowAbove = () => {
+    if (!selectedCell || !worksheet || !workbook) return;
+    
+    const { row } = selectedCell;
+    const newCells = [...cells];
+    
+    // Crear nueva fila vacía
+    const newRow: CellData[] = [];
+    const numCols = cells[0]?.length || 0;
+    for (let col = 0; col < numCols; col++) {
+      newRow.push({
+        value: '',
+        address: XLSX.utils.encode_cell({ r: row, c: col }),
+        row,
+        col
+      });
+    }
+    
+    // Insertar fila en el grid
+    newCells.splice(row, 0, newRow);
+    
+    // Actualizar índices de filas en todas las celdas siguientes
+    for (let r = row + 1; r < newCells.length; r++) {
+      for (let c = 0; c < newCells[r].length; c++) {
+        newCells[r][c].row = r;
+        newCells[r][c].address = XLSX.utils.encode_cell({ r: r, c: c });
+      }
+    }
+    
+    // Actualizar worksheet: desplazar todas las celdas hacia abajo
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    const newRange = {
+      s: range.s,
+      e: { r: range.e.r + 1, c: range.e.c }
+    };
+    
+    // Mover celdas existentes hacia abajo
+    for (let r = range.e.r; r >= row; r--) {
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const oldAddress = XLSX.utils.encode_cell({ r, c });
+        const newAddress = XLSX.utils.encode_cell({ r: r + 1, c });
+        const cell = worksheet[oldAddress];
+        if (cell) {
+          worksheet[newAddress] = { ...cell };
+          delete worksheet[oldAddress];
+        }
+      }
+    }
+    
+    // Actualizar rango
+    worksheet['!ref'] = XLSX.utils.encode_range(newRange);
+    
+    // Actualizar workbook
+    if (sheetName) {
+      workbook.Sheets[sheetName] = worksheet;
+    }
+    
+    setCells(newCells);
+    setSelectedCell({ row: row + 1, col: selectedCell.col }); // Mantener selección en la misma posición visual
+  };
+
+  // Insertar fila abajo de la seleccionada
+  const insertRowBelow = () => {
+    if (!selectedCell || !worksheet || !workbook) return;
+    
+    const { row } = selectedCell;
+    const newCells = [...cells];
+    
+    // Crear nueva fila vacía
+    const newRow: CellData[] = [];
+    const numCols = cells[0]?.length || 0;
+    for (let col = 0; col < numCols; col++) {
+      newRow.push({
+        value: '',
+        address: XLSX.utils.encode_cell({ r: row + 1, c: col }),
+        row: row + 1,
+        col
+      });
+    }
+    
+    // Insertar fila en el grid
+    newCells.splice(row + 1, 0, newRow);
+    
+    // Actualizar índices de filas en todas las celdas siguientes
+    for (let r = row + 2; r < newCells.length; r++) {
+      for (let c = 0; c < newCells[r].length; c++) {
+        newCells[r][c].row = r;
+        newCells[r][c].address = XLSX.utils.encode_cell({ r: r, c: c });
+      }
+    }
+    
+    // Actualizar worksheet: desplazar todas las celdas hacia abajo
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    const newRange = {
+      s: range.s,
+      e: { r: range.e.r + 1, c: range.e.c }
+    };
+    
+    // Mover celdas existentes hacia abajo
+    for (let r = range.e.r; r > row; r--) {
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const oldAddress = XLSX.utils.encode_cell({ r, c });
+        const newAddress = XLSX.utils.encode_cell({ r: r + 1, c });
+        const cell = worksheet[oldAddress];
+        if (cell) {
+          worksheet[newAddress] = { ...cell };
+          delete worksheet[oldAddress];
+        }
+      }
+    }
+    
+    // Actualizar rango
+    worksheet['!ref'] = XLSX.utils.encode_range(newRange);
+    
+    // Actualizar workbook
+    if (sheetName) {
+      workbook.Sheets[sheetName] = worksheet;
+    }
+    
+    setCells(newCells);
+    // Mantener selección en la misma celda
+  };
+
+  // Insertar columna a la izquierda de la seleccionada
+  const insertColumnLeft = () => {
+    if (!selectedCell || !worksheet || !workbook) return;
+    
+    const { col } = selectedCell;
+    const newCells = cells.map((row, rowIndex) => {
+      const newRow = [...row];
+      const newCell: CellData = {
+        value: '',
+        address: XLSX.utils.encode_cell({ r: rowIndex, c: col }),
+        row: rowIndex,
+        col
+      };
+      newRow.splice(col, 0, newCell);
+      
+      // Actualizar índices de columnas en todas las celdas siguientes
+      for (let c = col + 1; c < newRow.length; c++) {
+        newRow[c].col = c;
+        newRow[c].address = XLSX.utils.encode_cell({ r: rowIndex, c });
+      }
+      
+      return newRow;
+    });
+    
+    // Actualizar worksheet: desplazar todas las celdas hacia la derecha
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    const newRange = {
+      s: range.s,
+      e: { r: range.e.r, c: range.e.c + 1 }
+    };
+    
+    // Mover celdas existentes hacia la derecha
+    for (let r = range.s.r; r <= range.e.r; r++) {
+      for (let c = range.e.c; c >= col; c--) {
+        const oldAddress = XLSX.utils.encode_cell({ r, c });
+        const newAddress = XLSX.utils.encode_cell({ r, c: c + 1 });
+        const cell = worksheet[oldAddress];
+        if (cell) {
+          worksheet[newAddress] = { ...cell };
+          delete worksheet[oldAddress];
+        }
+      }
+    }
+    
+    // Actualizar rango
+    worksheet['!ref'] = XLSX.utils.encode_range(newRange);
+    
+    // Actualizar workbook
+    if (sheetName) {
+      workbook.Sheets[sheetName] = worksheet;
+    }
+    
+    setCells(newCells);
+    setSelectedCell({ row: selectedCell.row, col: col + 1 }); // Mantener selección en la misma posición visual
+  };
+
+  // Insertar columna a la derecha de la seleccionada
+  const insertColumnRight = () => {
+    if (!selectedCell || !worksheet || !workbook) return;
+    
+    const { col } = selectedCell;
+    const newCells = cells.map((row, rowIndex) => {
+      const newRow = [...row];
+      const newCell: CellData = {
+        value: '',
+        address: XLSX.utils.encode_cell({ r: rowIndex, c: col + 1 }),
+        row: rowIndex,
+        col: col + 1
+      };
+      newRow.splice(col + 1, 0, newCell);
+      
+      // Actualizar índices de columnas en todas las celdas siguientes
+      for (let c = col + 2; c < newRow.length; c++) {
+        newRow[c].col = c;
+        newRow[c].address = XLSX.utils.encode_cell({ r: rowIndex, c });
+      }
+      
+      return newRow;
+    });
+    
+    // Actualizar worksheet: desplazar todas las celdas hacia la derecha
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    const newRange = {
+      s: range.s,
+      e: { r: range.e.r, c: range.e.c + 1 }
+    };
+    
+    // Mover celdas existentes hacia la derecha
+    for (let r = range.s.r; r <= range.e.r; r++) {
+      for (let c = range.e.c; c > col; c--) {
+        const oldAddress = XLSX.utils.encode_cell({ r, c });
+        const newAddress = XLSX.utils.encode_cell({ r, c: c + 1 });
+        const cell = worksheet[oldAddress];
+        if (cell) {
+          worksheet[newAddress] = { ...cell };
+          delete worksheet[oldAddress];
+        }
+      }
+    }
+    
+    // Actualizar rango
+    worksheet['!ref'] = XLSX.utils.encode_range(newRange);
+    
+    // Actualizar workbook
+    if (sheetName) {
+      workbook.Sheets[sheetName] = worksheet;
+    }
+    
+    setCells(newCells);
+    // Mantener selección en la misma celda
   };
 
   // Obtener todas las runas usadas
@@ -564,29 +862,90 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
                 </div>
 
                 {selectedCell && !editingCell && (
-                  <div className="mt-4 p-3 bg-purple-900/30 border-2 border-purple-600 rounded flex items-center justify-between">
-                    <p className="text-purple-300 text-sm font-bold">
-                      {lang === 'ES' 
-                        ? `Celda seleccionada: ${XLSX.utils.encode_col(selectedCell.col)}${selectedCell.row + 1}`
-                        : lang === 'EN'
-                        ? `Selected cell: ${XLSX.utils.encode_col(selectedCell.col)}${selectedCell.row + 1}`
-                        : lang === 'DE'
-                        ? `Ausgewählte Zelle: ${XLSX.utils.encode_col(selectedCell.col)}${selectedCell.row + 1}`
-                        : `Cellule sélectionnée: ${XLSX.utils.encode_col(selectedCell.col)}${selectedCell.row + 1}`}
-                      {cells[selectedCell.row]?.[selectedCell.col]?.value && (
-                        <span className="ml-2 text-purple-200">
-                          = "{cells[selectedCell.row][selectedCell.col].value}"
-                        </span>
-                      )}
-                    </p>
-                    <button
-                      onClick={clearCell}
-                      className="bg-red-600 text-white border-2 border-red-500 hover:bg-red-500 transition-colors font-bold py-1 px-3 flex items-center gap-2 text-sm"
-                      title={lang === 'ES' ? 'Limpiar celda' : lang === 'EN' ? 'Clear cell' : lang === 'DE' ? 'Zelle löschen' : 'Effacer cellule'}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      {lang === 'ES' ? 'Limpiar' : lang === 'EN' ? 'Clear' : lang === 'DE' ? 'Löschen' : 'Effacer'}
-                    </button>
+                  <div className="mt-4 space-y-3">
+                    <div className="p-3 bg-purple-900/30 border-2 border-purple-600 rounded flex items-center justify-between">
+                      <p className="text-purple-300 text-sm font-bold">
+                        {lang === 'ES' 
+                          ? `Celda seleccionada: ${XLSX.utils.encode_col(selectedCell.col)}${selectedCell.row + 1}`
+                          : lang === 'EN'
+                          ? `Selected cell: ${XLSX.utils.encode_col(selectedCell.col)}${selectedCell.row + 1}`
+                          : lang === 'DE'
+                          ? `Ausgewählte Zelle: ${XLSX.utils.encode_col(selectedCell.col)}${selectedCell.row + 1}`
+                          : `Cellule sélectionnée: ${XLSX.utils.encode_col(selectedCell.col)}${selectedCell.row + 1}`}
+                        {cells[selectedCell.row]?.[selectedCell.col]?.value && (
+                          <span className="ml-2 text-purple-200">
+                            = "{cells[selectedCell.row][selectedCell.col].value}"
+                          </span>
+                        )}
+                      </p>
+                      <button
+                        onClick={clearCell}
+                        className="bg-red-600 text-white border-2 border-red-500 hover:bg-red-500 transition-colors font-bold py-1 px-3 flex items-center gap-2 text-sm"
+                        title={lang === 'ES' ? 'Limpiar celda' : lang === 'EN' ? 'Clear cell' : lang === 'DE' ? 'Zelle löschen' : 'Effacer cellule'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {lang === 'ES' ? 'Limpiar' : lang === 'EN' ? 'Clear' : lang === 'DE' ? 'Löschen' : 'Effacer'}
+                      </button>
+                    </div>
+                    
+                    {/* Botones para agregar filas y columnas */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Agregar Filas */}
+                      <div className="bg-gray-900/50 border-2 border-purple-600 rounded p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Rows className="w-4 h-4 text-purple-400" />
+                          <span className="text-purple-300 text-sm font-bold">
+                            {lang === 'ES' ? 'Agregar Fila' : lang === 'EN' ? 'Add Row' : lang === 'DE' ? 'Zeile hinzufügen' : 'Ajouter Ligne'}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={insertRowAbove}
+                            className="flex-1 bg-purple-700 hover:bg-purple-600 text-white border-2 border-purple-500 transition-colors font-bold py-2 px-3 text-xs flex items-center justify-center gap-1"
+                            title={lang === 'ES' ? 'Insertar fila arriba' : lang === 'EN' ? 'Insert row above' : lang === 'DE' ? 'Zeile oben einfügen' : 'Insérer ligne au-dessus'}
+                          >
+                            <Plus className="w-3 h-3" />
+                            {lang === 'ES' ? 'Arriba' : lang === 'EN' ? 'Above' : lang === 'DE' ? 'Oben' : 'Au-dessus'}
+                          </button>
+                          <button
+                            onClick={insertRowBelow}
+                            className="flex-1 bg-purple-700 hover:bg-purple-600 text-white border-2 border-purple-500 transition-colors font-bold py-2 px-3 text-xs flex items-center justify-center gap-1"
+                            title={lang === 'ES' ? 'Insertar fila abajo' : lang === 'EN' ? 'Insert row below' : lang === 'DE' ? 'Zeile unten einfügen' : 'Insérer ligne en-dessous'}
+                          >
+                            <Plus className="w-3 h-3" />
+                            {lang === 'ES' ? 'Abajo' : lang === 'EN' ? 'Below' : lang === 'DE' ? 'Unten' : 'En-dessous'}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Agregar Columnas */}
+                      <div className="bg-gray-900/50 border-2 border-purple-600 rounded p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Columns className="w-4 h-4 text-purple-400" />
+                          <span className="text-purple-300 text-sm font-bold">
+                            {lang === 'ES' ? 'Agregar Columna' : lang === 'EN' ? 'Add Column' : lang === 'DE' ? 'Spalte hinzufügen' : 'Ajouter Colonne'}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={insertColumnLeft}
+                            className="flex-1 bg-purple-700 hover:bg-purple-600 text-white border-2 border-purple-500 transition-colors font-bold py-2 px-3 text-xs flex items-center justify-center gap-1"
+                            title={lang === 'ES' ? 'Insertar columna izquierda' : lang === 'EN' ? 'Insert column left' : lang === 'DE' ? 'Spalte links einfügen' : 'Insérer colonne à gauche'}
+                          >
+                            <Plus className="w-3 h-3" />
+                            {lang === 'ES' ? 'Izquierda' : lang === 'EN' ? 'Left' : lang === 'DE' ? 'Links' : 'Gauche'}
+                          </button>
+                          <button
+                            onClick={insertColumnRight}
+                            className="flex-1 bg-purple-700 hover:bg-purple-600 text-white border-2 border-purple-500 transition-colors font-bold py-2 px-3 text-xs flex items-center justify-center gap-1"
+                            title={lang === 'ES' ? 'Insertar columna derecha' : lang === 'EN' ? 'Insert column right' : lang === 'DE' ? 'Spalte rechts einfügen' : 'Insérer colonne à droite'}
+                          >
+                            <Plus className="w-3 h-3" />
+                            {lang === 'ES' ? 'Derecha' : lang === 'EN' ? 'Right' : lang === 'DE' ? 'Rechts' : 'Droite'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
                 {editingCell && (
