@@ -55,6 +55,8 @@ export const translations = {
     tableStatus: 'Estado',
     ads: 'ALIADOS DEL REINO',
     footer: 'PDF WIZARDZ.APP. Magia Digital para Mortales.',
+    contactTitle: 'CONTACTO',
+    contactEmail: 'Email',
     new: 'PODER',
     
     // SEO Content
@@ -211,6 +213,8 @@ export const translations = {
     tableStatus: 'Status',
     ads: 'KINGDOM ALLIES',
     footer: 'PDF WIZARDZAPP. Digital Magic for Mortals.',
+    contactTitle: 'CONTACT',
+    contactEmail: 'Email',
     new: 'POWER',
     
     // SEO Content
@@ -366,6 +370,8 @@ export const translations = {
     tableStatus: 'Status',
     ads: 'VERBÜNDETE',
     footer: 'PDF WIZARDZ.APP. Digitale Magie.',
+    contactTitle: 'KONTAKT',
+    contactEmail: 'E-Mail',
     new: 'MACHT',
     
     // SEO Content
@@ -523,6 +529,8 @@ export const translations = {
     tableStatus: 'État',
     ads: 'ALLIÉS DU ROYAUME',
     footer: 'PDF WIZARDZ.APP. Magie Numérique.',
+    contactTitle: 'CONTACT',
+    contactEmail: 'Email',
     new: 'POUVOIR',
     
     // SEO Content

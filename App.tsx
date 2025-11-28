@@ -1875,6 +1875,19 @@ const App: React.FC = () => {
 
       <footer className="text-center py-8 text-gray-600 border-t-2 border-black mt-auto bg-gray-900">
           <p className="mb-4">© {new Date().getFullYear()} {t.footer}</p>
+          
+          {/* Contact Section */}
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-indigo-400 mb-2 pixel-font-header">{t.contactTitle}</h3>
+            <p className="text-sm mb-1">{t.contactEmail}:</p>
+            <a 
+              href="mailto:hello@pdfwizardz.app" 
+              className="text-indigo-400 hover:text-indigo-300 underline text-sm"
+            >
+              hello@pdfwizardz.app
+            </a>
+          </div>
+          
           <div className="flex flex-wrap justify-center gap-4 text-sm">
             <a 
               href="/privacy-policy.html" 
