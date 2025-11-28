@@ -61,7 +61,7 @@ export const analyzePdfContent = async (
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -116,7 +116,7 @@ export const generateQuiz = async (text: string, lang: Language): Promise<QuizQu
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -144,7 +144,7 @@ export const generateFlashcards = async (text: string, lang: Language): Promise<
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -197,7 +197,7 @@ export const generatePresentationData = async (text: string, lang: Language): Pr
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -361,7 +361,7 @@ export const extractStructuredData = async (
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -513,7 +513,7 @@ export const generateMindMapData = async (
     `;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -617,7 +617,7 @@ ${pdfText.substring(0, maxPdfTextLength)} ${pdfText.length > maxPdfTextLength ? 
 ${conversationHistory ? `--- HISTORIAL DE CONVERSACIÓN ---\n\n${conversationHistory}\n\n` : ''}--- NUEVA PREGUNTA ---\n\nUsuario: ${newQuestion}\n\nEspíritu: Responde en formato JSON con los campos answer, found y citations.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
