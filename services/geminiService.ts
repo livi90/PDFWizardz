@@ -43,21 +43,47 @@ export const analyzePdfContent = async (
     if (context === 'EDUCATION') contextInstruction = "Focus on Subject, Topic, and Chapter. Filename should look like: Subject_Topic_Date.pdf";
     
     const prompt = `
-    You are an expert file organizer. Analyze the text content of this PDF file.
-    Original Filename: ${originalFilename}
-    Target Language: ${lang} (Output the Summary and Category in ${lang}, but keep the Filename format standard ASCII if possible).
+    You are an expert file organizer and data auditor. Your task is to analyze this PDF with SURGICAL PRECISION.
     
-    Context: ${contextInstruction}
+    ORIGINAL FILENAME: ${originalFilename}
+    TARGET LANGUAGE: ${lang} (Output Summary and Category in ${lang}, but keep Filename format standard ASCII).
+    
+    CONTEXT: ${contextInstruction}
 
-    Document Text Context:
+    DOCUMENT TEXT (first 10000 chars):
     ${text.substring(0, 10000)} 
     
-    Instructions:
-    1. Identify the document date. If none, use today.
-    2. Identify the entity (sender/creator).
-    3. Categorize the document (In ${lang}).
-    4. Create a standardized filename.
-    5. Provide a short summary (In ${lang}).
+    ⚡ CHAIN OF THOUGHT - ANALYZE STEP BY STEP:
+    
+    STEP 1 - DATE EXTRACTION (Heuristic Priority):
+    - FIRST, search for: "Fecha Factura", "Invoice Date", "Fecha Emisión", "Issue Date", "Fecha Documento"
+    - SECOND, search for: "Fecha Vencimiento", "Due Date", "Fecha Pago", "Payment Date"
+    - LAST RESORT: "Fecha Impresión", "Print Date", "Fecha Creación", "Creation Date"
+    - If multiple dates found, prefer the INVOICE/ISSUE date over print/creation dates
+    - Format: YYYY-MM-DD (if none found, use today's date)
+    
+    STEP 2 - ENTITY IDENTIFICATION:
+    - Look for company names, sender names, or organization names
+    - Prefer names in headers/footers over body text
+    - Extract the PRIMARY entity (the one issuing/creating the document)
+    - Clean: Remove "S.A.", "Ltd.", "Inc." if they make the filename too long
+    
+    STEP 3 - CATEGORIZATION:
+    - Analyze document structure and keywords
+    - Categories: Invoice, Contract, Receipt, Report, Manual, Letter, Form, etc.
+    - Output category in ${lang}
+    
+    STEP 4 - FILENAME CONSTRUCTION:
+    - Format: YYYY-MM-DD_Entity_Category.pdf
+    - Use ASCII characters only (no accents, no special chars)
+    - Entity: Max 30 chars, use underscores instead of spaces
+    - Category: Max 20 chars
+    
+    STEP 5 - SUMMARY:
+    - One sentence summary in ${lang}
+    - Include key information: what, who, when
+    
+    Now extract the data following these steps precisely.
     `;
 
     const response = await ai.models.generateContent({
@@ -66,6 +92,7 @@ export const analyzePdfContent = async (
       config: {
         responseMimeType: "application/json",
         responseSchema: responseSchema,
+        temperature: 0.1, // Surgical precision for data extraction
       },
     });
 
@@ -109,10 +136,41 @@ const flashcardSchema: Schema = {
 export const generateQuiz = async (text: string, lang: Language): Promise<QuizQuestion[]> => {
   try {
     const prompt = `
-    Generate 10 challenging multiple-choice questions based on the following text.
-    Target Language: ${lang}.
-    Format: JSON Array.
-    Text: ${text.substring(0, 15000)}
+    You are an expert educator creating challenging, thought-provoking quiz questions.
+    
+    TARGET LANGUAGE: ${lang}
+    
+    ⚡ INSTRUCCIONES CRÍTICAS PARA PREGUNTAS DE CALIDAD:
+    
+    1. EVITA PREGUNTAS OBVIAS:
+       - NO hagas preguntas como "¿De qué color es el caballo blanco?"
+       - NO hagas preguntas que se respondan con una simple lectura literal
+       - NO hagas preguntas triviales o superficiales
+    
+    2. BUSCA CONCEPTOS PROFUNDOS:
+       - Enfócate en relaciones causales, implicaciones, consecuencias
+       - Pregunta sobre "por qué", "cómo", "qué implica", "qué relación tiene"
+       - Busca conceptos que requieran comprensión, no solo memorización
+    
+    3. DIFICULTAD PROGRESIVA:
+       - Algunas preguntas deben ser de comprensión básica
+       - Otras deben requerir análisis y síntesis
+       - Incluye al menos 2-3 preguntas que requieran pensamiento crítico
+    
+    4. OPCIONES MÚLTIPLES:
+       - 4 opciones por pregunta
+       - Solo UNA respuesta correcta
+       - Las opciones incorrectas deben ser plausibles (no obviamente falsas)
+       - Evita opciones como "Todas las anteriores" o "Ninguna de las anteriores"
+    
+    5. VARIEDAD TEMÁTICA:
+       - Cubre diferentes aspectos del documento
+       - No te enfoques solo en un tema
+    
+    TEXTO DEL DOCUMENTO (primeros 15000 caracteres):
+    ${text.substring(0, 15000)}
+    
+    Genera 10 preguntas desafiantes que evalúen comprensión profunda, no solo memorización.
     `;
 
     const response = await ai.models.generateContent({
@@ -121,6 +179,7 @@ export const generateQuiz = async (text: string, lang: Language): Promise<QuizQu
       config: {
         responseMimeType: "application/json",
         responseSchema: quizSchema,
+        temperature: 0.8, // High creativity for engaging questions
       },
     });
 
@@ -137,10 +196,19 @@ export const generateQuiz = async (text: string, lang: Language): Promise<QuizQu
 export const generateFlashcards = async (text: string, lang: Language): Promise<FlashcardItem[]> => {
   try {
     const prompt = `
-    Generate 12 key concept flashcards (Front: Term/Question, Back: Definition/Answer) based on the text.
-    Target Language: ${lang}.
-    Format: JSON Array.
-    Text: ${text.substring(0, 15000)}
+    You are an expert educator creating effective flashcards for active recall.
+    
+    TARGET LANGUAGE: ${lang}
+    
+    INSTRUCCIONES:
+    - Generate 12 key concept flashcards
+    - Front: Term, concept, or question (concise, 1-5 words)
+    - Back: Clear definition or answer (2-3 sentences, comprehensive)
+    - Focus on important concepts, not trivial details
+    - Make flashcards that test understanding, not just memorization
+    
+    TEXTO DEL DOCUMENTO (primeros 15000 caracteres):
+    ${text.substring(0, 15000)}
     `;
 
     const response = await ai.models.generateContent({
@@ -149,6 +217,7 @@ export const generateFlashcards = async (text: string, lang: Language): Promise<
       config: {
         responseMimeType: "application/json",
         responseSchema: flashcardSchema,
+        temperature: 0.7, // Creative but focused
       },
     });
 
@@ -188,12 +257,19 @@ const pptSchema: Schema = {
 export const generatePresentationData = async (text: string, lang: Language): Promise<PresentationStructure> => {
   try {
     const prompt = `
-    Act as a Presentation Designer. Create a structure for a PowerPoint presentation based on the document text.
-    The presentation should summarize the key points effectively.
-    Target Language: ${lang}.
-    Limit: 5-8 Slides.
-    Format: JSON.
-    Text: ${text.substring(0, 20000)}
+    You are an expert Presentation Designer. Create a compelling PowerPoint structure based on the document.
+    
+    TARGET LANGUAGE: ${lang}
+    SLIDE LIMIT: 5-8 slides
+    
+    INSTRUCTIONS:
+    - Create an engaging main title and subtitle
+    - Each slide should have a clear title, 3-5 concise bullet points, and detailed speaker notes
+    - Organize content logically with a clear flow
+    - Make it informative and engaging
+    
+    TEXTO DEL DOCUMENTO (primeros 20000 caracteres):
+    ${text.substring(0, 20000)}
     `;
 
     const response = await ai.models.generateContent({
@@ -202,6 +278,7 @@ export const generatePresentationData = async (text: string, lang: Language): Pr
       config: {
         responseMimeType: "application/json",
         responseSchema: pptSchema,
+        temperature: 0.7, // Creative for engaging presentations
       },
     });
 
@@ -340,24 +417,60 @@ export const extractStructuredData = async (
     `;
     } else {
       extractionInstructions = `
-    Instrucciones específicas:
-    - Fechas: Convierte a formato YYYY-MM-DD o DD/MM/YYYY
-    - Montos: Extrae solo el número, sin símbolos de moneda (€, $, etc.)
-    - Nombres: Extrae nombres completos de empresas y personas
-    - Si un campo no existe en el documento, devuélvelo como null o string vacío
+    ⚡ MODO AUDITORÍA DE DATOS ⚡
+    
+    INSTRUCCIONES CRÍTICAS DE EXTRACCIÓN:
+    
+    1. FECHAS (Heurística de Prioridad):
+       - PRIMERO buscar: "Fecha Factura", "Invoice Date", "Fecha Emisión", "Issue Date"
+       - SEGUNDO buscar: "Fecha Vencimiento", "Due Date", "Fecha Pago"
+       - ÚLTIMO RECURSO: "Fecha Impresión", "Print Date", "Fecha Creación"
+       - Formato: YYYY-MM-DD o DD/MM/YYYY
+       - Si NO encuentras fecha, devuelve null explícitamente (NO inventes fechas)
+    
+    2. MONTOS Y NÚMEROS (Limpieza Robótica):
+       - Extrae SOLO el número, sin símbolos: €, $, USD, EUR, MXN, etc.
+       - Elimina separadores de miles: 1.234,56 → 1234.56
+       - Elimina espacios: "1 234,56" → 1234.56
+       - Formato final: número decimal con punto (ej: 1234.56)
+       - Si hay múltiples montos, extrae el TOTAL/IMPORTE TOTAL
+    
+    3. BÚSQUEDA DE VALORES NULOS:
+       - Para CADA campo, busca explícitamente en el documento
+       - Si NO encuentras el valor después de buscar, devuelve null (NO string vacío "")
+       - NO inventes valores, NO uses valores por defecto
+       - Si el campo existe pero está vacío en el documento, devuelve null
+    
+    4. NOMBRES Y TEXTOS:
+       - Extrae nombres completos de empresas y personas
+       - Limpia espacios extra y caracteres especiales al inicio/final
+       - Mantén mayúsculas/minúsculas originales
+    
+    5. VALIDACIÓN FINAL:
+       - Revisa cada campo extraído
+       - Si un campo no tiene sentido o no está en el documento, devuelve null
     `;
     }
     
     const prompt = `
-    Eres un experto en extracción de datos de documentos financieros y facturas.
-    Analiza el siguiente texto extraído de un PDF y extrae los datos relevantes.
+    Eres un AUDITOR SENIOR de datos financieros. Tu trabajo es extraer datos con PRECISIÓN QUIRÚRGICA.
     
     ${langInstructions}
     
     ${extractionInstructions}
     
-    Texto del documento:
+    ⚡ CHAIN OF THOUGHT - PROCESO DE EXTRACCIÓN:
+    
+    1. PRIMERO: Lee todo el documento y identifica TODAS las secciones relevantes
+    2. SEGUNDO: Para cada campo requerido, busca explícitamente en el documento
+    3. TERCERO: Si encuentras el valor, extráelo y límpialo según las reglas
+    4. CUARTO: Si NO encuentras el valor después de buscar, marca como null
+    5. QUINTO: Valida que los datos extraídos sean coherentes
+    
+    TEXTO DEL DOCUMENTO (primeros 15000 caracteres):
     ${text.substring(0, 15000)}
+    
+    Ahora extrae los datos siguiendo este proceso paso a paso. Sé preciso y no inventes valores.
     `;
 
     const response = await ai.models.generateContent({
@@ -366,16 +479,45 @@ export const extractStructuredData = async (
       config: {
         responseMimeType: "application/json",
         responseSchema: dynamicSchema,
+        temperature: 0.1, // Robotic precision for data extraction
       },
     });
 
     if (response.text) {
       const data = JSON.parse(response.text) as Record<string, any>;
-      // Limpiar valores null y convertir a strings cuando sea necesario
+      // Limpiar valores null y limpiar símbolos de moneda de campos numéricos
       const cleanedData: Record<string, any> = {};
+      const numericFields = ['total', 'impuesto', 'subtotal', 'importe', 'amount', 'tax', 'subtotal_amount'];
+      
       for (const [key, value] of Object.entries(data)) {
         if (value !== null && value !== undefined && value !== '') {
-          cleanedData[key] = String(value);
+          let cleanedValue = String(value);
+          
+          // Si es un campo numérico, limpiar símbolos de moneda y separadores
+          const normalizedKey = key.toLowerCase();
+          if (numericFields.some(field => normalizedKey.includes(field))) {
+            // Eliminar símbolos de moneda: €, $, USD, EUR, MXN, etc.
+            cleanedValue = cleanedValue.replace(/[€$£¥]|USD|EUR|MXN|GBP|JPY/gi, '').trim();
+            // Eliminar espacios
+            cleanedValue = cleanedValue.replace(/\s+/g, '');
+            
+            // Detectar formato: europeo (1.234,56) o internacional (1,234.56)
+            const hasCommaDecimal = /,\d{1,2}$/.test(cleanedValue);
+            const hasDotDecimal = /\.\d{1,2}$/.test(cleanedValue);
+            
+            if (hasCommaDecimal) {
+              // Formato europeo: 1.234,56 → 1234.56
+              cleanedValue = cleanedValue.replace(/\./g, '').replace(',', '.');
+            } else if (hasDotDecimal) {
+              // Formato internacional: 1,234.56 → 1234.56
+              cleanedValue = cleanedValue.replace(/,/g, '');
+            } else {
+              // Sin decimales: eliminar todos los separadores
+              cleanedValue = cleanedValue.replace(/[.,]/g, '');
+            }
+          }
+          
+          cleanedData[key] = cleanedValue;
         }
       }
       return cleanedData;
@@ -518,6 +660,7 @@ export const generateMindMapData = async (
       config: {
         responseMimeType: "application/json",
         responseSchema: mindMapSchema,
+        temperature: 0.7, // Creative for concept mapping
       },
     });
 
