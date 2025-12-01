@@ -68,7 +68,8 @@ export const fillExcelTemplate = async (
   excelTemplate: File,
   lang: 'ES' | 'EN' = 'ES',
   onProgress?: (current: number, total: number) => void,
-  targetKeys?: string[] // Claves específicas a buscar (extracción dirigida)
+  targetKeys?: string[], // Claves específicas a buscar (extracción dirigida)
+  forceOCR: boolean = false // Forzar OCR para PDFs escaneados
 ): Promise<void> => {
   try {
     if (pdfFiles.length === 0) {
@@ -93,7 +94,7 @@ export const fillExcelTemplate = async (
       }
       
       // 2.1. Extraer texto del PDF
-      const pdfText = await extractTextFromPdf(pdfFile, Infinity);
+      const pdfText = await extractTextFromPdf(pdfFile, Infinity, forceOCR);
       
       // 2.2. Extraer datos estructurados usando Gemini (con claves dirigidas si se proporcionan)
       const extractedData = await extractStructuredData(pdfText, lang, targetKeys);

@@ -14,6 +14,7 @@ import PricingPage from './components/PricingPage';
 import LandingPage from './components/LandingPage';
 import TemplateEditor from './components/TemplateEditor';
 import ToolPage from './components/ToolPage';
+import { OcrSwitch } from './components/OcrSwitch';
 import { getPremiumStatus, getFeatureAccessStatus, consumeFreeTrialUse, getPlanLimits } from './services/gumroadService';
 import { usePdfProcessor } from './hooks/usePdfProcessor';
 import { mergePdfs, imagesToPdf, splitPdf, addWatermark, convertToText, convertToImages, convertToDocx, convertToExcel, convertToPptx } from './services/pdfTools';
@@ -85,6 +86,7 @@ const App: React.FC = () => {
   } = usePdfProcessor();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [docContext, setDocContext] = useState<DocumentContext>('GENERAL');
+  const [useOcr, setUseOcr] = useState<boolean>(false);
 
   // Simple Tool State
   const [toolFiles, setToolFiles] = useState<File[]>([]);
@@ -134,8 +136,14 @@ const App: React.FC = () => {
   const [showTargetedTip, setShowTargetedTip] = useState(false); // Tip de extracción dirigida
   const [detectedKeys, setDetectedKeys] = useState<string[]>([]); // Runas detectadas
   const [isScanningKeys, setIsScanningKeys] = useState(false);
+  const [useOcrExcel, setUseOcrExcel] = useState<boolean>(false); // OCR para Excel Templates
   const pdfTemplateInputRef = useRef<HTMLInputElement>(null);
   const excelTemplateInputRef = useRef<HTMLInputElement>(null);
+  
+  // OCR States para otras funcionalidades
+  const [useOcrStudy, setUseOcrStudy] = useState<boolean>(false); // OCR para Study
+  const [useOcrOracle, setUseOcrOracle] = useState<boolean>(false); // OCR para Oracle
+  const [useOcrChat, setUseOcrChat] = useState<boolean>(false); // OCR para Chat
 
   // --- Handlers ---
   const handleAiFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,7 +157,7 @@ const App: React.FC = () => {
   };
 
   const handleAiStart = () => {
-      startProcessing(lang, docContext);
+      startProcessing(lang, docContext, useOcr);
   }
 
   const executeMerge = async () => {
@@ -241,7 +249,7 @@ const App: React.FC = () => {
           setIsToolProcessing(true);
           if (toolFiles.length !== 1) throw new Error("Please select 1 PDF file.");
           
-          const text = await extractTextFromPdf(toolFiles[0], 20); // Limit to 20 pages for study to avoid token limits
+          const text = await extractTextFromPdf(toolFiles[0], 20, useOcrStudy); // Limit to 20 pages for study to avoid token limits
           
           if (mode === 'QUIZ') {
               const quiz = await generateQuiz(text, lang);
@@ -262,7 +270,7 @@ const App: React.FC = () => {
           setIsToolProcessing(true);
           if (toolFiles.length !== 1) throw new Error(lang === 'ES' ? "Por favor, selecciona 1 archivo PDF." : "Please select 1 PDF file.");
           
-          const text = await extractTextFromPdf(toolFiles[0], 50); // Hasta 50 páginas para mapas mentales
+          const text = await extractTextFromPdf(toolFiles[0], 50, useOcrOracle); // Hasta 50 páginas para mapas mentales
           const mindMap = await generateMindMapData(text, lang);
           setMindMapData(mindMap);
       } catch (e: any) {
@@ -278,7 +286,7 @@ const App: React.FC = () => {
           if (toolFiles.length !== 1) throw new Error(lang === 'ES' ? "Por favor, selecciona 1 archivo PDF." : "Please select 1 PDF file.");
           
           // Extraer todo el texto del PDF (sin límite de páginas para chat)
-          const text = await extractTextFromPdf(toolFiles[0], Infinity);
+          const text = await extractTextFromPdf(toolFiles[0], Infinity, useOcrChat);
           setChatPdfText(text);
           setChatPdfFileName(toolFiles[0].name);
           navigate('/chat-pdf');
@@ -360,7 +368,8 @@ const App: React.FC = () => {
             excelTemplate, 
             lang,
             (current, total) => setTemplateProgress({ current, total }),
-            detectedKeys.length > 0 ? detectedKeys : undefined
+            detectedKeys.length > 0 ? detectedKeys : undefined,
+            useOcrExcel
           );
           
           alert(lang === 'ES' 
@@ -909,6 +918,16 @@ const App: React.FC = () => {
              </div>
           </div>
 
+          {/* OCR Switch */}
+          <div className="mb-4 flex justify-center">
+            <OcrSwitch
+              checked={useOcr}
+              onChange={setUseOcr}
+              label={t.ocrSwitchLabel}
+              tooltip={t.ocrSwitchTooltip}
+            />
+          </div>
+
           <input type="file" multiple accept=".pdf" onChange={handleAiFileChange} className="hidden" ref={fileInputRef} />
           {!hasFiles ? (
              <div onClick={() => !isProcessing && fileInputRef.current?.click()} className="border-4 border-dashed border-indigo-900 bg-indigo-900/20 p-12 cursor-pointer hover:bg-indigo-900/30 flex flex-col items-center gap-4 transition-colors">
@@ -1229,6 +1248,16 @@ const App: React.FC = () => {
 
                 <PixelCard title="PLANTILLA EXCEL INTELIGENTE" color="emerald" className="text-center">
                     <div className="space-y-6">
+                        {/* OCR Switch */}
+                        <div className="mb-4 flex justify-center">
+                            <OcrSwitch
+                                checked={useOcrExcel}
+                                onChange={setUseOcrExcel}
+                                label={t.ocrSwitchLabel}
+                                tooltip={t.ocrSwitchTooltip}
+                            />
+                        </div>
+
                         {/* PDF Input - Multiple */}
                         <div>
                             <label className="block text-left text-emerald-300 font-bold mb-2">
@@ -1547,21 +1576,31 @@ const App: React.FC = () => {
                  </div>
              ) : (
                 renderSimpleTool(t.studyTitle, t.studyDesc, ".pdf", "GENERATE", () => {}, 'yellow', (
-                    <div className="flex gap-4 justify-center">
-                        <button 
-                            onClick={() => executeStudy('QUIZ')} 
-                            disabled={isToolProcessing}
-                            className="bg-yellow-600 text-black border-4 border-black px-6 py-4 retro-shadow font-bold hover:bg-yellow-500 w-full md:w-auto"
-                        >
-                            {isToolProcessing ? t.processing : t.genQuiz}
-                        </button>
-                        <button 
-                            onClick={() => executeStudy('FLASHCARDS')} 
-                            disabled={isToolProcessing}
-                            className="bg-indigo-600 text-white border-4 border-black px-6 py-4 retro-shadow font-bold hover:bg-indigo-500 w-full md:w-auto"
-                        >
-                            {isToolProcessing ? t.processing : t.genCards}
-                        </button>
+                    <div className="space-y-4">
+                        <div className="flex justify-center">
+                            <OcrSwitch
+                                checked={useOcrStudy}
+                                onChange={setUseOcrStudy}
+                                label={t.ocrSwitchLabel}
+                                tooltip={t.ocrSwitchTooltip}
+                            />
+                        </div>
+                        <div className="flex gap-4 justify-center">
+                            <button 
+                                onClick={() => executeStudy('QUIZ')} 
+                                disabled={isToolProcessing}
+                                className="bg-yellow-600 text-black border-4 border-black px-6 py-4 retro-shadow font-bold hover:bg-yellow-500 w-full md:w-auto"
+                            >
+                                {isToolProcessing ? t.processing : t.genQuiz}
+                            </button>
+                            <button 
+                                onClick={() => executeStudy('FLASHCARDS')} 
+                                disabled={isToolProcessing}
+                                className="bg-indigo-600 text-white border-4 border-black px-6 py-4 retro-shadow font-bold hover:bg-indigo-500 w-full md:w-auto"
+                            >
+                                {isToolProcessing ? t.processing : t.genCards}
+                            </button>
+                        </div>
                     </div>
                 ), 1)
              )
@@ -1575,7 +1614,16 @@ const App: React.FC = () => {
                     lang={lang}
                  />
              ) : (
-                renderSimpleTool(t.oracleTitle, t.oracleDesc, ".pdf", lang === 'ES' ? "GENERAR MAPA MENTAL" : "GENERATE MIND MAP", executeOracle, 'blue', undefined, 1)
+                renderSimpleTool(t.oracleTitle, t.oracleDesc, ".pdf", lang === 'ES' ? "GENERAR MAPA MENTAL" : "GENERATE MIND MAP", executeOracle, 'blue', (
+                    <div className="flex justify-center">
+                        <OcrSwitch
+                            checked={useOcrOracle}
+                            onChange={setUseOcrOracle}
+                            label={t.ocrSwitchLabel}
+                            tooltip={t.ocrSwitchTooltip}
+                        />
+                    </div>
+                ), 1)
              )
           )} />
 
@@ -1589,7 +1637,16 @@ const App: React.FC = () => {
                     isPremium={isPremium}
                  />
              ) : (
-                renderSimpleTool(t.chatTitle, t.chatDesc, ".pdf", lang === 'ES' ? "INVOCAR ESPÍRITU" : "INVOKE SPIRIT", executeChat, 'pink', undefined, 1)
+                renderSimpleTool(t.chatTitle, t.chatDesc, ".pdf", lang === 'ES' ? "INVOCAR ESPÍRITU" : "INVOKE SPIRIT", executeChat, 'pink', (
+                    <div className="flex justify-center">
+                        <OcrSwitch
+                            checked={useOcrChat}
+                            onChange={setUseOcrChat}
+                            label={t.ocrSwitchLabel}
+                            tooltip={t.ocrSwitchTooltip}
+                        />
+                    </div>
+                ), 1)
              )
           )} />
 

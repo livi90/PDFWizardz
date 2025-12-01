@@ -159,7 +159,11 @@ export const translations = {
     pricingPdfSize: 'Tamaño máximo PDF',
     pricingSupport: 'Soporte',
     pricingCommunity: 'Comunidad',
-    pricingPriority: 'Prioritario'
+    pricingPriority: 'Prioritario',
+    
+    // OCR Switch translations
+    ocrSwitchLabel: 'PDF Escaneado/Foto',
+    ocrSwitchTooltip: 'Activa esto si tu PDF es una imagen escaneada o una foto. El sistema usará OCR (reconocimiento óptico de caracteres) para extraer el texto automáticamente.'
   },
   EN: {
     heroTitle: 'DIGITAL',
@@ -316,7 +320,11 @@ export const translations = {
     pricingPdfSize: 'Max PDF size',
     pricingSupport: 'Support',
     pricingCommunity: 'Community',
-    pricingPriority: 'Priority'
+    pricingPriority: 'Priority',
+    
+    // OCR Switch translations
+    ocrSwitchLabel: 'Scanned PDF/Photo',
+    ocrSwitchTooltip: 'Enable this if your PDF is a scanned image or photo. The system will use OCR (Optical Character Recognition) to extract text automatically.'
   },
   DE: {
     heroTitle: 'DIGITALE',
@@ -473,7 +481,11 @@ export const translations = {
     pricingPdfSize: 'Maximale PDF-Größe',
     pricingSupport: 'Support',
     pricingCommunity: 'Community',
-    pricingPriority: 'Priorität'
+    pricingPriority: 'Priorität',
+    
+    // OCR Switch translations
+    ocrSwitchLabel: 'Gescanntes PDF/Foto',
+    ocrSwitchTooltip: 'Aktivieren Sie dies, wenn Ihr PDF ein gescanntes Bild oder Foto ist. Das System verwendet OCR (Optische Zeichenerkennung), um den Text automatisch zu extrahieren.'
   },
   FR: {
     heroTitle: 'ALCHIMIE',
@@ -632,7 +644,11 @@ export const translations = {
     pricingPdfSize: 'Taille maximale PDF',
     pricingSupport: 'Support',
     pricingCommunity: 'Communauté',
-    pricingPriority: 'Prioritaire'
+    pricingPriority: 'Prioritaire',
+    
+    // OCR Switch translations
+    ocrSwitchLabel: 'PDF Scanné/Photo',
+    ocrSwitchTooltip: 'Activez ceci si votre PDF est une image scannée ou une photo. Le système utilisera l\'OCR (Reconnaissance Optique de Caractères) pour extraire le texte automatiquement.'
   }
 };
 

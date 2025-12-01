@@ -36,7 +36,7 @@ export const usePdfProcessor = () => {
     }));
   }, []);
 
-  const startProcessing = useCallback(async (lang: Language, context: DocumentContext) => {
+  const startProcessing = useCallback(async (lang: Language, context: DocumentContext, forceOCR: boolean = false) => {
     if (isProcessing) return;
     setIsProcessing(true);
     
@@ -56,7 +56,7 @@ export const usePdfProcessor = () => {
       setFiles(prev => prev.map(f => f.id === currentItem.id ? { ...f, status: ProcessingStatus.PROCESSING } : f));
 
       try {
-        const text = await extractTextFromPdf(currentItem.file);
+        const text = await extractTextFromPdf(currentItem.file, 3, forceOCR);
         const aiResponse = await analyzePdfContent(text, currentItem.file.name, lang, context);
         
         setFiles(prev => prev.map(f => f.id === currentItem.id ? { 

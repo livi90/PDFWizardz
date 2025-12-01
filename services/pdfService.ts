@@ -1,12 +1,21 @@
 // We use the global pdfjsLib loaded via CDN in index.html to avoid complex worker setups in this environment
+import { isScannedPdf, extractTextFromScannedPdf } from './ocrService';
+
 declare global {
   interface Window {
     pdfjsLib: any;
   }
 }
 
-export const extractTextFromPdf = async (file: File, pageLimit: number = 3): Promise<string> => {
+export const extractTextFromPdf = async (file: File, pageLimit: number = 3, forceOCR: boolean = false): Promise<string> => {
   try {
+    // Si forceOCR está activado, usar OCR directamente
+    if (forceOCR) {
+      console.log('OCR forzado por el usuario, usando OCR directamente...');
+      return await extractTextFromScannedPdf(file, pageLimit, true);
+    }
+
+    // Primero intentar extraer texto normalmente
     const arrayBuffer = await file.arrayBuffer();
     // Using the global window.pdfjsLib
     const loadingTask = window.pdfjsLib.getDocument({ data: arrayBuffer });
@@ -23,9 +32,29 @@ export const extractTextFromPdf = async (file: File, pageLimit: number = 3): Pro
       fullText += `Page ${i}: ${pageText}\n\n`; // Added extra newline for better parsing
     }
 
+    // Si no se extrajo suficiente texto, verificar si es un PDF escaneado
+    const extractedTextLength = fullText.trim().replace(/\n/g, ' ').length;
+    if (extractedTextLength < 50) {
+      console.log('Poco texto extraído, verificando si es PDF escaneado...');
+      const scanned = await isScannedPdf(file, Math.min(2, maxPages));
+      
+      if (scanned) {
+        console.log('PDF escaneado detectado, usando OCR...');
+        return await extractTextFromScannedPdf(file, pageLimit, true);
+      }
+    }
+
     return fullText;
   } catch (error) {
     console.error("Error extracting PDF text:", error);
-    throw new Error("Failed to read PDF text.");
+    
+    // Si falla la extracción normal, intentar con OCR como último recurso
+    try {
+      console.log('Error en extracción normal, intentando con OCR...');
+      return await extractTextFromScannedPdf(file, pageLimit, true);
+    } catch (ocrError) {
+      console.error("Error en OCR:", ocrError);
+      throw new Error("Failed to read PDF text. El PDF podría estar corrupto o ser una imagen sin texto.");
+    }
   }
 };
