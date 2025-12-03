@@ -167,8 +167,11 @@ const LicenseActivator: React.FC<LicenseActivatorProps> = ({ lang, onActivated, 
               rel="noopener noreferrer"
               className="w-full block bg-indigo-600 text-white border-2 border-indigo-500 hover:bg-indigo-500 transition-colors font-bold py-3 text-base text-center rounded-lg"
             >
-              💳 {t.licenseBuyPremium || 'COMPRAR PREMIUM (€2)'}
+              💳 {t.licenseBuyPremium || 'COMPRAR PREMIUM (€4,99)'}
             </a>
+            <p className="text-xs text-gray-400 text-center mt-1">
+              {t.licensePremiumDiscount || 'Con código de descuento 40%: €2,99'}
+            </p>
             <a
               href="https://pdfwizardzapp.gumroad.com/l/jdoam"
               target="_blank"
@@ -177,6 +180,9 @@ const LicenseActivator: React.FC<LicenseActivatorProps> = ({ lang, onActivated, 
             >
               ⭐ {t.licenseBuyPlatinum || 'COMPRAR PLATINUM+ (€8)'}
             </a>
+            <p className="text-xs text-gray-400 text-center mt-1">
+              {t.licensePlatinumDiscount || 'Con código de descuento 40%: €4,80'}
+            </p>
           </div>
         </div>
       </div>

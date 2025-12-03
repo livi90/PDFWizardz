@@ -60,7 +60,7 @@ export interface PresentationStructure {
   slides: PresentationSlide[];
 }
 
-export type ViewType = 'HOME' | 'AI_ORGANIZER' | 'MERGE' | 'IMG_TO_PDF' | 'SPLIT' | 'EDIT' | 'CONVERT' | 'STUDY' | 'EXCEL_TEMPLATE' | 'ORACLE' | 'CHAT' | 'PRICING' | 'LANDING_FACTURAS_EXCEL' | 'LANDING_GENERADOR_TEST' | 'LANDING_MODELO_TRIBUTARIO' | 'TEMPLATE_EDITOR';
+export type ViewType = 'HOME' | 'AI_ORGANIZER' | 'MERGE' | 'IMG_TO_PDF' | 'SPLIT' | 'EDIT' | 'CONVERT' | 'STUDY' | 'EXCEL_TEMPLATE' | 'ORACLE' | 'CHAT' | 'PRICING' | 'LANDING_FACTURAS_EXCEL' | 'LANDING_GENERADOR_TEST' | 'LANDING_MODELO_TRIBUTARIO' | 'TEMPLATE_EDITOR' | 'AFFILIATES';
 
 export type Language = 'ES' | 'EN' | 'DE' | 'FR';
 

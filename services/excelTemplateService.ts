@@ -85,6 +85,37 @@ export const fillExcelTemplate = async (
       cellHTML: false
     });
     
+    // 1.5. MEJORA UX: Duplicar automáticamente filas plantilla si solo hay una
+    // Esto elimina la necesidad de que el usuario copie y pegue manualmente
+    workbook.SheetNames.forEach(sheetName => {
+      const worksheet = workbook.Sheets[sheetName];
+      const templateRow = findTemplateRow(worksheet);
+      
+      if (templateRow !== -1) {
+        // Contar cuántas filas con marcadores existen
+        const rowsWithMarkers = countRowsWithMarkers(worksheet);
+        
+        // Si solo hay una fila plantilla y hay más PDFs que filas, duplicar automáticamente
+        if (rowsWithMarkers === 1 && pdfFiles.length > 1) {
+          const currentRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+          let lastRow = currentRange.e.r;
+          
+          // Duplicar la fila plantilla hasta tener suficientes filas
+          for (let i = 1; i < pdfFiles.length; i++) {
+            lastRow++;
+            copyAndFillRow(worksheet, templateRow, lastRow, {}); // Copiar sin rellenar aún
+          }
+          
+          // Actualizar el rango del worksheet
+          const newRange = {
+            s: { r: 0, c: 0 },
+            e: { r: lastRow, c: currentRange.e.c }
+          };
+          worksheet['!ref'] = XLSX.utils.encode_range(newRange);
+        }
+      }
+    });
+    
     // 2. Procesar cada PDF y agregarlo como fila
     for (let pdfIndex = 0; pdfIndex < pdfFiles.length; pdfIndex++) {
       const pdfFile = pdfFiles[pdfIndex];
@@ -103,22 +134,26 @@ export const fillExcelTemplate = async (
       workbook.SheetNames.forEach(sheetName => {
         const worksheet = workbook.Sheets[sheetName];
         
-        // Encontrar la fila plantilla (primera fila con marcadores)
-        const templateRow = findTemplateRow(worksheet);
+        // Encontrar todas las filas con marcadores
+        const templateRows = findAllTemplateRows(worksheet);
         
-        if (templateRow === -1) {
+        if (templateRows.length === 0) {
           console.warn(`No se encontró fila plantilla en la hoja ${sheetName}`);
           return;
         }
         
-        // Determinar la fila destino (después de la última fila con datos o después de la plantilla)
-        const currentRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-        const targetRow = pdfIndex === 0 ? templateRow : currentRange.e.r + 1;
+        // Usar la fila correspondiente al índice del PDF (o la primera si hay más PDFs que filas)
+        const sourceRowIndex = Math.min(pdfIndex, templateRows.length - 1);
+        const sourceRow = templateRows[sourceRowIndex];
         
-        // Copiar la fila plantilla y rellenarla con datos
-        copyAndFillRow(worksheet, templateRow, targetRow, extractedData);
+        // La fila destino es la misma que la fuente (ya están duplicadas si era necesario)
+        const targetRow = sourceRow;
+        
+        // Rellenar la fila con los datos extraídos
+        copyAndFillRow(worksheet, sourceRow, targetRow, extractedData);
         
         // Actualizar el rango del worksheet
+        const currentRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
         const newRange = {
           s: { r: 0, c: 0 },
           e: { r: Math.max(currentRange.e.r, targetRow), c: currentRange.e.c }
@@ -140,8 +175,12 @@ export const fillExcelTemplate = async (
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
     });
     
-    const outputFileName = excelTemplate.name.replace('.xlsx', `_relleno_${pdfFiles.length}_facturas.xlsx`)
-      .replace('.xls', `_relleno_${pdfFiles.length}_facturas.xlsx`);
+    // Generar nombre de archivo asegurando extensión .xlsx
+    let outputFileName = excelTemplate.name;
+    // Remover cualquier extensión existente (.xlsx, .xls, .xlsxx, etc.)
+    outputFileName = outputFileName.replace(/\.(xlsx|xls|xlss?x?)$/i, '');
+    // Agregar el sufijo y la extensión correcta
+    outputFileName = `${outputFileName}_relleno_${pdfFiles.length}_facturas.xlsx`;
     
     saveAs(blob, outputFileName);
     
@@ -171,6 +210,54 @@ function findTemplateRow(worksheet: XLSX.WorkSheet): number {
   }
   
   return -1;
+}
+
+/**
+ * Cuenta cuántas filas tienen marcadores ({{CLAVE}})
+ */
+function countRowsWithMarkers(worksheet: XLSX.WorkSheet): number {
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+  const markerRegex = /\{\{([^}]+)\}\}/;
+  const rowsWithMarkers = new Set<number>();
+  
+  // Escanear todas las filas
+  for (let row = range.s.r; row <= range.e.r; row++) {
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      const cell = worksheet[cellAddress];
+      
+      if (cell && cell.v && typeof cell.v === 'string' && markerRegex.test(cell.v)) {
+        rowsWithMarkers.add(row);
+        break; // Solo necesitamos saber que esta fila tiene marcadores
+      }
+    }
+  }
+  
+  return rowsWithMarkers.size;
+}
+
+/**
+ * Encuentra todas las filas que contienen marcadores (filas plantilla)
+ */
+function findAllTemplateRows(worksheet: XLSX.WorkSheet): number[] {
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+  const markerRegex = /\{\{([^}]+)\}\}/;
+  const templateRows: number[] = [];
+  
+  // Escanear todas las filas
+  for (let row = range.s.r; row <= range.e.r; row++) {
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      const cell = worksheet[cellAddress];
+      
+      if (cell && cell.v && typeof cell.v === 'string' && markerRegex.test(cell.v)) {
+        templateRows.push(row);
+        break; // Solo necesitamos saber que esta fila tiene marcadores
+      }
+    }
+  }
+  
+  return templateRows.sort((a, b) => a - b); // Ordenar por número de fila
 }
 
 /**

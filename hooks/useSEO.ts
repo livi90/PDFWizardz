@@ -359,6 +359,28 @@ const seoMetadata: Record<ViewType, Record<Language, SEOMetadata>> = {
       description: 'Créez des modèles Excel avec des marqueurs {{TOTAL}}, {{DATE}}, etc. sans Excel installé. Éditeur de modèles visuel dans le navigateur. Insérez des runes (variables) en cliquant sur les cellules. 100% gratuit et privé.',
       keywords: 'éditeur modèle excel, créer modèle excel, insérer variables excel, éditeur excel en ligne, modèle excel avec marqueurs, forge des runes'
     }
+  },
+  AFFILIATES: {
+    ES: {
+      title: 'Programa de Afiliados PDF Wizardz - Gana Dinero Recomendando',
+      description: 'Únete a nuestro programa de afiliados y gana comisiones por cada venta que generes. Perfecto para influencers, creadores de contenido y profesionales del marketing. Comisiones atractivas, herramientas de seguimiento en tiempo real y materiales de marketing listos para usar.',
+      keywords: 'programa afiliados PDF, ganar dinero recomendando, afiliados PDF Wizardz, comisiones PDF, marketing afiliados, programa referidos PDF, ganar dinero online, afiliados influencers'
+    },
+    EN: {
+      title: 'PDF Wizardz Affiliate Program - Earn Money by Recommending',
+      description: 'Join our affiliate program and earn commissions on every sale you generate. Perfect for influencers, content creators, and marketing professionals. Attractive commissions, real-time tracking tools, and ready-to-use marketing materials.',
+      keywords: 'PDF affiliate program, earn money recommending, PDF Wizardz affiliates, PDF commissions, affiliate marketing, PDF referral program, earn money online, influencer affiliates'
+    },
+    DE: {
+      title: 'PDF Wizardz Affiliate-Programm - Verdiene Geld durch Empfehlung',
+      description: 'Tritt unserem Affiliate-Programm bei und verdiene Provisionen bei jedem Verkauf, den du generierst. Perfekt für Influencer, Content-Ersteller und Marketing-Profis. Attraktive Provisionen, Echtzeit-Tracking-Tools und einsatzbereite Marketing-Materialien.',
+      keywords: 'PDF Affiliate-Programm, Geld verdienen durch Empfehlung, PDF Wizardz Affiliates, PDF Provisionen, Affiliate-Marketing, PDF Empfehlungsprogramm, online Geld verdienen, Influencer Affiliates'
+    },
+    FR: {
+      title: 'Programme d\'Affiliation PDF Wizardz - Gagnez de l\'Argent en Recommandant',
+      description: 'Rejoignez notre programme d\'affiliation et gagnez des commissions sur chaque vente que vous générez. Parfait pour les influenceurs, créateurs de contenu et professionnels du marketing. Commissions attractives, outils de suivi en temps réel et matériaux marketing prêts à l\'emploi.',
+      keywords: 'programme affiliation PDF, gagner argent recommandant, PDF Wizardz affiliés, commissions PDF, marketing affiliation, programme parrainage PDF, gagner argent en ligne, affiliés influenceurs'
+    }
   }
 };
 

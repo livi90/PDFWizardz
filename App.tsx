@@ -14,6 +14,7 @@ import PricingPage from './components/PricingPage';
 import LandingPage from './components/LandingPage';
 import TemplateEditor from './components/TemplateEditor';
 import ToolPage from './components/ToolPage';
+import AffiliateLanding from './components/AffiliateLanding';
 import { OcrSwitch } from './components/OcrSwitch';
 import { getPremiumStatus, getFeatureAccessStatus, consumeFreeTrialUse, getPlanLimits } from './services/gumroadService';
 import { usePdfProcessor } from './hooks/usePdfProcessor';
@@ -48,6 +49,7 @@ const App: React.FC = () => {
     '/facturas-excel': 'LANDING_FACTURAS_EXCEL',
     '/generador-test': 'LANDING_GENERADOR_TEST',
     '/modelo-tributario': 'LANDING_MODELO_TRIBUTARIO',
+    '/afiliados': 'AFFILIATES',
   };
   
   const currentView = routeToViewType[location.pathname] || 'HOME';
@@ -76,6 +78,7 @@ const App: React.FC = () => {
       'LANDING_FACTURAS_EXCEL': '/facturas-excel',
       'LANDING_GENERADOR_TEST': '/generador-test',
       'LANDING_MODELO_TRIBUTARIO': '/modelo-tributario',
+      'AFFILIATES': '/afiliados',
     };
     navigate(viewToRoute[view] || '/');
   };
@@ -1577,6 +1580,30 @@ const App: React.FC = () => {
              ) : (
                 renderSimpleTool(t.studyTitle, t.studyDesc, ".pdf", "GENERATE", () => {}, 'yellow', (
                     <div className="space-y-4">
+                        {/* Aviso sobre documentos largos */}
+                        <div className="bg-yellow-900/50 border-4 border-yellow-600 rounded-lg p-4 mb-4">
+                            <div className="flex items-start gap-3">
+                                <span className="text-2xl">⚠️</span>
+                                <div>
+                                    <p className="font-bold text-yellow-200 mb-2 text-base md:text-lg">
+                                        {lang === 'ES' ? 'Recomendación importante:' : 
+                                         lang === 'EN' ? 'Important tip:' :
+                                         lang === 'DE' ? 'Wichtiger Tipp:' :
+                                         'Astuce importante:'}
+                                    </p>
+                                    <p className="text-yellow-100 text-sm md:text-base">
+                                        {lang === 'ES' 
+                                          ? 'La IA funciona mejor y más precisa con documentos pequeños (pocas páginas). Con documentos largos o de muchas páginas, los resultados pueden ser imprecisos o incompletos. Para mejores resultados, usa PDFs de 5-10 páginas máximo.'
+                                          : lang === 'EN'
+                                          ? 'AI works better and more accurately with small documents (few pages). With long documents or many pages, results may be inaccurate or incomplete. For best results, use PDFs with 5-10 pages maximum.'
+                                          : lang === 'DE'
+                                          ? 'Die KI funktioniert besser und genauer mit kleinen Dokumenten (wenige Seiten). Bei langen Dokumenten oder vielen Seiten können die Ergebnisse ungenau oder unvollständig sein. Für beste Ergebnisse verwenden Sie PDFs mit maximal 5-10 Seiten.'
+                                          : 'L\'IA fonctionne mieux et plus précisément avec de petits documents (quelques pages). Avec de longs documents ou de nombreuses pages, les résultats peuvent être imprécis ou incomplets. Pour de meilleurs résultats, utilisez des PDFs de 5-10 pages maximum.'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div className="flex justify-center">
                             <OcrSwitch
                                 checked={useOcrStudy}
@@ -1927,8 +1954,31 @@ const App: React.FC = () => {
                 color="purple"
              />
           } />
+          <Route path="/afiliados" element={
+            <AffiliateLanding
+              lang={lang}
+              onGoToHome={() => navigate('/')}
+            />
+          } />
         </Routes>
       </main>
+
+      {/* Botón flotante de acceso rápido a features - Solo visible en home */}
+      {location.pathname === '/' && (
+        <button
+          onClick={() => {
+            const toolsSection = document.getElementById('tools');
+            if (toolsSection) {
+              toolsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }}
+          className="fixed bottom-6 right-6 z-50 bg-indigo-600 hover:bg-indigo-500 text-white border-4 border-indigo-400 rounded-full w-16 h-16 flex items-center justify-center shadow-[0_4px_20px_rgba(99,102,241,0.6)] hover:shadow-[0_6px_25px_rgba(99,102,241,0.8)] transition-all hover:scale-110 active:scale-95 group"
+          aria-label={lang === 'ES' ? 'Ir a herramientas' : lang === 'EN' ? 'Go to tools' : lang === 'DE' ? 'Zu Tools gehen' : 'Aller aux outils'}
+          title={lang === 'ES' ? 'Ir a herramientas' : lang === 'EN' ? 'Go to tools' : lang === 'DE' ? 'Zu Tools gehen' : 'Aller aux outils'}
+        >
+          <Sparkles className="w-8 h-8 group-hover:rotate-12 transition-transform" />
+        </button>
+      )}
 
       <footer className="text-center py-8 text-gray-600 border-t-2 border-black mt-auto bg-gray-900">
           <p className="mb-4">© {new Date().getFullYear()} {t.footer}</p>
@@ -1968,6 +2018,13 @@ const App: React.FC = () => {
               className="text-indigo-400 hover:text-indigo-300 underline"
             >
               {lang === 'ES' ? 'Política de Cookies' : lang === 'EN' ? 'Cookie Policy' : lang === 'DE' ? 'Cookie-Richtlinie' : 'Politique des Cookies'}
+            </a>
+            <span className="text-gray-500">|</span>
+            <a 
+              href="/afiliados" 
+              className="text-yellow-400 hover:text-yellow-300 underline font-bold"
+            >
+              {lang === 'ES' ? '💰 Programa de Afiliados' : lang === 'EN' ? '💰 Affiliate Program' : lang === 'DE' ? '💰 Affiliate-Programm' : '💰 Programme d\'Affiliation'}
             </a>
           </div>
       </footer>

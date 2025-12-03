@@ -134,6 +134,20 @@ const ChatSession: React.FC<ChatSessionProps> = ({
             <p className="text-base text-gray-400">{pdfFileName}</p>
           </div>
         </div>
+        
+        {/* Aviso sobre documentos largos */}
+        <div className="hidden md:block max-w-xs">
+          <div className="bg-yellow-900/50 border-2 border-yellow-600 rounded-lg p-2 text-xs text-yellow-200">
+            <p className="font-bold mb-1">⚠️ {lang === 'ES' ? 'Recomendación:' : lang === 'EN' ? 'Tip:' : lang === 'DE' ? 'Tipp:' : 'Astuce:'}</p>
+            <p>{lang === 'ES' 
+              ? 'La IA funciona mejor con documentos pequeños (pocas páginas). Con documentos largos puede ser imprecisa o incompleta.'
+              : lang === 'EN'
+              ? 'AI works best with small documents (few pages). With long documents it may be inaccurate or incomplete.'
+              : lang === 'DE'
+              ? 'Die KI funktioniert am besten mit kleinen Dokumenten (wenige Seiten). Bei langen Dokumenten kann sie ungenau oder unvollständig sein.'
+              : 'L\'IA fonctionne mieux avec de petits documents (quelques pages). Avec de longs documents, elle peut être imprécise ou incomplète.'}</p>
+          </div>
+        </div>
         <div className="flex items-center gap-4">
           {/* Contador de preguntas y límite */}
           <div className="text-right">
@@ -167,6 +181,20 @@ const ChatSession: React.FC<ChatSessionProps> = ({
 
       {/* Mensajes */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-900">
+        {/* Aviso sobre documentos largos - versión móvil */}
+        <div className="md:hidden mb-4">
+          <div className="bg-yellow-900/50 border-2 border-yellow-600 rounded-lg p-3 text-sm text-yellow-200">
+            <p className="font-bold mb-1">⚠️ {lang === 'ES' ? 'Recomendación:' : lang === 'EN' ? 'Tip:' : lang === 'DE' ? 'Tipp:' : 'Astuce:'}</p>
+            <p>{lang === 'ES' 
+              ? 'La IA funciona mejor con documentos pequeños (pocas páginas). Con documentos largos puede ser imprecisa o incompleta.'
+              : lang === 'EN'
+              ? 'AI works best with small documents (few pages). With long documents it may be inaccurate or incomplete.'
+              : lang === 'DE'
+              ? 'Die KI funktioniert am besten mit kleinen Dokumenten (wenige Seiten). Bei langen Dokumenten kann sie ungenau oder unvollständig sein.'
+              : 'L\'IA fonctionne mieux avec de petits documents (quelques pages). Avec de longs documents, elle peut être imprécise ou incomplète.'}</p>
+          </div>
+        </div>
+        
         {messages.length === 0 && (
           <div className="text-center text-gray-500 mt-20">
             <FileText className="w-20 h-20 mx-auto mb-6 text-gray-600" />

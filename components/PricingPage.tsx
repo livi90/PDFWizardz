@@ -140,7 +140,13 @@ const PricingPage: React.FC<PricingPageProps> = ({
               <h2 className="text-3xl font-bold text-indigo-400 mb-2">
                 {t.pricingPremiumPlan || 'Plan Premium'}
               </h2>
-              <div className="text-4xl font-bold text-yellow-400 mb-2">€2</div>
+              <div className="text-4xl font-bold text-yellow-400 mb-2">€4,99</div>
+              <p className="text-xs text-yellow-300 mb-1">
+                {lang === 'ES' ? 'Con código de descuento 40%: €2,99' : 
+                 lang === 'EN' ? 'With 40% discount code: €2.99' :
+                 lang === 'DE' ? 'Mit 40% Rabattcode: €2,99' :
+                 'Avec code de réduction 40%: €2,99'}
+              </p>
               <p className="text-gray-400">{t.pricingPremiumDesc || 'Todo el poder desbloqueado'}</p>
             </div>
 
@@ -182,8 +188,14 @@ const PricingPage: React.FC<PricingPageProps> = ({
                   rel="noopener noreferrer"
                   className="w-full block bg-indigo-600 text-white border-2 border-indigo-500 hover:bg-indigo-500 transition-colors font-bold py-4 text-lg text-center rounded-lg mb-2"
                 >
-                  💳 {t.pricingBuyPremium || 'COMPRAR PREMIUM (€2)'}
+                  💳 {t.pricingBuyPremium || 'COMPRAR PREMIUM (€4,99)'}
                 </a>
+                <p className="text-xs text-yellow-300 text-center mb-2">
+                  {lang === 'ES' ? 'Con código de descuento 40%: €2,99' : 
+                   lang === 'EN' ? 'With 40% discount code: €2.99' :
+                   lang === 'DE' ? 'Mit 40% Rabattcode: €2,99' :
+                   'Avec code de réduction 40%: €2,99'}
+                </p>
                 <button
                   onClick={() => setShowActivator(true)}
                   className="w-full bg-gray-700 text-white border-2 border-gray-600 hover:bg-gray-600 transition-colors font-bold py-3 text-base"
@@ -210,6 +222,12 @@ const PricingPage: React.FC<PricingPageProps> = ({
                 {t.pricingPlatinumPlan || 'Plan Platinum+'}
               </h2>
               <div className="text-4xl font-bold text-yellow-400 mb-2">€8</div>
+              <p className="text-xs text-yellow-300 mb-1">
+                {lang === 'ES' ? 'Con código de descuento 40%: €4,80' : 
+                 lang === 'EN' ? 'With 40% discount code: €4.80' :
+                 lang === 'DE' ? 'Mit 40% Rabattcode: €4,80' :
+                 'Avec code de réduction 40%: €4,80'}
+              </p>
               <p className="text-gray-400">{t.pricingPlatinumDesc || 'Máximo rendimiento'}</p>
             </div>
 
@@ -254,6 +272,12 @@ const PricingPage: React.FC<PricingPageProps> = ({
                   <Star className="w-6 h-6" />
                   💳 {t.pricingBuyPlatinum || 'COMPRAR PLATINUM+ (€8)'}
                 </a>
+                <p className="text-xs text-yellow-300 text-center mb-2">
+                  {lang === 'ES' ? 'Con código de descuento 40%: €4,80' : 
+                   lang === 'EN' ? 'With 40% discount code: €4.80' :
+                   lang === 'DE' ? 'Mit 40% Rabattcode: €4,80' :
+                   'Avec code de réduction 40%: €4,80'}
+                </p>
                 <button
                   onClick={() => setShowActivator(true)}
                   className="w-full bg-gray-700 text-white border-2 border-gray-600 hover:bg-gray-600 transition-colors font-bold py-3 text-base"
@@ -276,7 +300,7 @@ const PricingPage: React.FC<PricingPageProps> = ({
                 <tr className="border-b-2 border-gray-700">
                   <th className="text-left py-4 px-4 text-gray-300 text-lg md:text-xl font-bold">{t.pricingFeature || 'Característica'}</th>
                   <th className="text-center py-4 px-4 text-gray-300 text-lg md:text-xl font-bold">€0</th>
-                  <th className="text-center py-4 px-4 text-indigo-400 text-lg md:text-xl font-bold">€2</th>
+                  <th className="text-center py-4 px-4 text-indigo-400 text-lg md:text-xl font-bold">€4,99</th>
                   <th className="text-center py-4 px-4 text-purple-400 text-lg md:text-xl font-bold">€8</th>
                 </tr>
               </thead>
