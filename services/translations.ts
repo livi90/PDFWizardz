@@ -152,8 +152,6 @@ export const translations = {
     pricingBuyPlatinum: 'COMPRAR PLATINUM+ (€8)',
     licenseBuyPremium: 'COMPRAR PREMIUM (€4,99)',
     licenseBuyPlatinum: 'COMPRAR PLATINUM+ (€8)',
-    licensePremiumDiscount: 'Con código de descuento 40%: €2,99',
-    licensePlatinumDiscount: 'Con código de descuento 40%: €4,80',
     
     pricingChatQuestions: 'Preguntas en Chat',
     pricingTokens: 'Tokens por respuesta',
@@ -315,8 +313,6 @@ export const translations = {
     pricingBuyPlatinum: 'BUY PLATINUM+ (€8)',
     licenseBuyPremium: 'BUY PREMIUM (€4.99)',
     licenseBuyPlatinum: 'BUY PLATINUM+ (€8)',
-    licensePremiumDiscount: 'With 40% discount code: €2.99',
-    licensePlatinumDiscount: 'With 40% discount code: €4.80',
     
     pricingChatQuestions: 'Chat Questions',
     pricingTokens: 'Tokens per response',
@@ -478,8 +474,6 @@ export const translations = {
     pricingBuyPlatinum: 'PLATINUM+ KAUFEN (€8)',
     licenseBuyPremium: 'PREMIUM KAUFEN (€4,99)',
     licenseBuyPlatinum: 'PLATINUM+ KAUFEN (€8)',
-    licensePremiumDiscount: 'Mit 40% Rabattcode: €2,99',
-    licensePlatinumDiscount: 'Mit 40% Rabattcode: €4,80',
     
     pricingChatQuestions: 'Chat-Fragen',
     pricingTokens: 'Tokens pro Antwort',
@@ -643,8 +637,6 @@ export const translations = {
     pricingBuyPlatinum: 'ACHETER PLATINUM+ (€8)',
     licenseBuyPremium: 'ACHETER PREMIUM (€4,99)',
     licenseBuyPlatinum: 'ACHETER PLATINUM+ (€8)',
-    licensePremiumDiscount: 'Avec code de réduction 40%: €2,99',
-    licensePlatinumDiscount: 'Avec code de réduction 40%: €4,80',
     
     pricingChatQuestions: 'Questions dans le Chat',
     pricingTokens: 'Tokens par réponse',

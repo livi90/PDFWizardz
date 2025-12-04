@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import PixelCard from './components/PixelCard';
@@ -19,9 +19,9 @@ import { OcrSwitch } from './components/OcrSwitch';
 import { getPremiumStatus, getFeatureAccessStatus, consumeFreeTrialUse, getPlanLimits } from './services/gumroadService';
 import { usePdfProcessor } from './hooks/usePdfProcessor';
 import { mergePdfs, imagesToPdf, splitPdf, addWatermark, convertToText, convertToImages, convertToDocx, convertToExcel, convertToPptx } from './services/pdfTools';
-import { generateQuiz, generateFlashcards, generateMindMapData } from './services/geminiService';
+import { generateQuiz, generateFlashcards, generateMindMapData, analyzeInvoicesAndSuggestFields } from './services/geminiService';
 import { extractTextFromPdf } from './services/pdfService';
-import { fillExcelTemplate, getTemplateKeys } from './services/excelTemplateService';
+import { fillExcelTemplate, getTemplateKeys, generateTemplateFromFields } from './services/excelTemplateService';
 import { getTranslation } from './services/translations';
 import { ViewType, Language, DocumentContext, StudyMaterial, MindMapData } from './types';
 import { useSEO } from './hooks/useSEO';
@@ -53,7 +53,51 @@ const App: React.FC = () => {
   };
   
   const currentView = routeToViewType[location.pathname] || 'HOME';
-  const [lang, setLang] = useState<Language>('ES');
+  
+  // Detectar idioma automáticamente por ubicación
+  const detectLanguageByLocation = (): Language => {
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const locale = navigator.language || navigator.languages[0];
+      
+      // Detectar por timezone
+      if (timezone.includes('Europe/Madrid') || timezone.includes('America/Mexico') || timezone.includes('America/Argentina')) {
+        return 'ES';
+      }
+      if (timezone.includes('Europe/Berlin') || timezone.includes('Europe/Vienna') || timezone.includes('Europe/Zurich')) {
+        return 'DE';
+      }
+      if (timezone.includes('Europe/Paris') || timezone.includes('Europe/Brussels')) {
+        return 'FR';
+      }
+      
+      // Detectar por locale del navegador
+      if (locale.startsWith('es')) return 'ES';
+      if (locale.startsWith('de')) return 'DE';
+      if (locale.startsWith('fr')) return 'FR';
+      if (locale.startsWith('en')) return 'EN';
+      
+      // Por defecto inglés
+      return 'EN';
+    } catch {
+      return 'EN';
+    }
+  };
+  
+  // Inicializar idioma desde localStorage o detección automática
+  const [lang, setLang] = useState<Language>(() => {
+    const savedLang = localStorage.getItem('pdfwizardz_lang') as Language | null;
+    if (savedLang && ['ES', 'EN', 'DE', 'FR'].includes(savedLang)) {
+      return savedLang;
+    }
+    return detectLanguageByLocation();
+  });
+  
+  // Guardar idioma en localStorage cuando cambie
+  useEffect(() => {
+    localStorage.setItem('pdfwizardz_lang', lang);
+  }, [lang]);
+  
   const t = getTranslation(lang);
   
   // SEO: Actualizar título y meta tags según la vista
@@ -135,11 +179,14 @@ const App: React.FC = () => {
   const [excelTemplate, setExcelTemplate] = useState<File | null>(null);
   const [isTemplateProcessing, setIsTemplateProcessing] = useState(false);
   const [templateProgress, setTemplateProgress] = useState({ current: 0, total: 0 });
-  const [showFullTutorial, setShowFullTutorial] = useState(false);
   const [showTargetedTip, setShowTargetedTip] = useState(false); // Tip de extracción dirigida
   const [detectedKeys, setDetectedKeys] = useState<string[]>([]); // Runas detectadas
   const [isScanningKeys, setIsScanningKeys] = useState(false);
+  const [suggestedFields, setSuggestedFields] = useState<Array<{ field: string; description: string; example: string; confidence: number }>>([]);
+  const [isAnalyzingInvoices, setIsAnalyzingInvoices] = useState(false);
+  const [selectedSuggestedFields, setSelectedSuggestedFields] = useState<Set<string>>(new Set());
   const [useOcrExcel, setUseOcrExcel] = useState<boolean>(false); // OCR para Excel Templates
+  const [renameFiles, setRenameFiles] = useState<boolean>(false); // Opción para renombrar archivos
   const pdfTemplateInputRef = useRef<HTMLInputElement>(null);
   const excelTemplateInputRef = useRef<HTMLInputElement>(null);
   
@@ -322,6 +369,76 @@ const App: React.FC = () => {
     }
   };
 
+  // Handler para analizar facturas y sugerir campos automáticamente
+  const handleAnalyzeInvoices = async () => {
+    if (pdfsForTemplate.length < 3) {
+      alert(lang === 'ES' 
+        ? 'Por favor, sube al menos 3-5 facturas del mismo proveedor para un análisis preciso.' 
+        : 'Please upload at least 3-5 invoices from the same provider for accurate analysis.');
+      return;
+    }
+
+    if (pdfsForTemplate.length > 10) {
+      alert(lang === 'ES' 
+        ? 'Por favor, sube máximo 10 facturas para el análisis.' 
+        : 'Please upload maximum 10 invoices for analysis.');
+      return;
+    }
+
+    try {
+      setIsAnalyzingInvoices(true);
+      setSuggestedFields([]);
+      setSelectedSuggestedFields(new Set());
+
+      // Extraer texto de todas las facturas
+      const texts: string[] = [];
+      for (const pdfFile of pdfsForTemplate) {
+        const text = await extractTextFromPdf(pdfFile, 50, useOcrExcel); // Limitar a 50 páginas por factura
+        texts.push(text);
+      }
+
+      // Analizar y sugerir campos
+      const suggestions = await analyzeInvoicesAndSuggestFields(texts, lang);
+      setSuggestedFields(suggestions);
+      
+      // Seleccionar automáticamente campos con confianza > 80
+      const autoSelected = new Set(
+        suggestions
+          .filter(s => s.confidence >= 80)
+          .map(s => s.field)
+      );
+      setSelectedSuggestedFields(autoSelected);
+
+      alert(lang === 'ES' 
+        ? `✅ Análisis completado. Se encontraron ${suggestions.length} campos. Revisa y selecciona los que necesites.` 
+        : `✅ Analysis completed. Found ${suggestions.length} fields. Review and select the ones you need.`);
+    } catch (error) {
+      console.error('Error analizando facturas:', error);
+      alert(lang === 'ES' 
+        ? 'Error al analizar las facturas: ' + (error instanceof Error ? error.message : 'Error desconocido')
+        : 'Error analyzing invoices: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsAnalyzingInvoices(false);
+    }
+  };
+
+  // Handler para generar plantilla desde campos sugeridos
+  const handleGenerateTemplateFromSuggestions = () => {
+    if (selectedSuggestedFields.size === 0) {
+      alert(lang === 'ES' 
+        ? 'Por favor, selecciona al menos un campo para generar la plantilla.' 
+        : 'Please select at least one field to generate the template.');
+      return;
+    }
+
+    const fields = Array.from(selectedSuggestedFields);
+    generateTemplateFromFields(fields, `plantilla_auto_${Date.now()}.xlsx`);
+    
+    alert(lang === 'ES' 
+      ? `✅ Plantilla generada con ${fields.length} campos. Descárgala y úsala para procesar tus facturas.` 
+      : `✅ Template generated with ${fields.length} fields. Download it and use it to process your invoices.`);
+  };
+
   const executeExcelTemplate = async () => {
       // Verificar acceso antes de procesar
       const accessStatus = getFeatureAccessStatus('excel_template');
@@ -372,7 +489,8 @@ const App: React.FC = () => {
             lang,
             (current, total) => setTemplateProgress({ current, total }),
             detectedKeys.length > 0 ? detectedKeys : undefined,
-            useOcrExcel
+            useOcrExcel,
+            renameFiles // Pasar opción de renombrar archivos
           );
           
           alert(lang === 'ES' 
@@ -1311,9 +1429,131 @@ const App: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* Auto-Generator: Analizar facturas y sugerir campos */}
+                        {pdfsForTemplate.length >= 3 && pdfsForTemplate.length <= 10 && (
+                            <div className="bg-yellow-900/30 border-4 border-yellow-600 rounded-lg p-6 mb-4">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <Sparkles className="w-8 h-8 text-yellow-400" />
+                                    <h3 className="text-xl font-bold text-yellow-300 pixel-font-header">
+                                        {lang === 'ES' ? '🎯 GENERADOR AUTOMÁTICO DE PLANTILLAS' : lang === 'EN' ? '🎯 AUTO TEMPLATE GENERATOR' : lang === 'DE' ? '🎯 AUTOMATISCHER VORLAGEN-GENERATOR' : '🎯 GÉNÉRATEUR AUTOMATIQUE DE MODÈLES'}
+                                    </h3>
+                                </div>
+                                <p className="text-yellow-200 mb-4 text-sm">
+                                    {lang === 'ES' 
+                                        ? 'La IA analizará tus facturas y sugerirá automáticamente los campos de la plantilla. Perfecto para facturas del mismo proveedor.'
+                                        : lang === 'EN'
+                                        ? 'AI will analyze your invoices and automatically suggest template fields. Perfect for invoices from the same provider.'
+                                        : lang === 'DE'
+                                        ? 'Die KI analysiert Ihre Rechnungen und schlägt automatisch Vorlagenfelder vor. Perfekt für Rechnungen vom gleichen Anbieter.'
+                                        : 'L\'IA analysera vos factures et suggérera automatiquement les champs du modèle. Parfait pour les factures du même fournisseur.'}
+                                </p>
+                                
+                                {suggestedFields.length === 0 ? (
+                                    <button
+                                        onClick={handleAnalyzeInvoices}
+                                        disabled={isAnalyzingInvoices}
+                                        className="w-full bg-yellow-600 hover:bg-yellow-500 text-black border-4 border-yellow-500 font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {isAnalyzingInvoices ? (
+                                            <>
+                                                <Sparkles className="w-5 h-5 animate-spin" />
+                                                {lang === 'ES' ? 'Analizando facturas...' : lang === 'EN' ? 'Analyzing invoices...' : lang === 'DE' ? 'Rechnungen analysieren...' : 'Analyse des factures...'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Sparkles className="w-5 h-5" />
+                                                {lang === 'ES' ? '🔍 ANALIZAR Y SUGERIR CAMPOS' : lang === 'EN' ? '🔍 ANALYZE AND SUGGEST FIELDS' : lang === 'DE' ? '🔍 FELDER ANALYSIEREN UND VORSCHLAGEN' : '🔍 ANALYSER ET SUGGÉRER DES CHAMPS'}
+                                            </>
+                                        )}
+                                    </button>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="bg-gray-900 border-2 border-yellow-600 rounded-lg p-4 max-h-96 overflow-y-auto">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h4 className="text-lg font-bold text-yellow-300">
+                                                    {lang === 'ES' ? 'Campos sugeridos:' : lang === 'EN' ? 'Suggested fields:' : lang === 'DE' ? 'Vorgeschlagene Felder:' : 'Champs suggérés:'}
+                                                </h4>
+                                                <button
+                                                    onClick={() => {
+                                                        const allFields = new Set(suggestedFields.map(s => s.field));
+                                                        setSelectedSuggestedFields(allFields);
+                                                    }}
+                                                    className="text-xs text-yellow-400 hover:text-yellow-300 underline"
+                                                >
+                                                    {lang === 'ES' ? 'Seleccionar todos' : lang === 'EN' ? 'Select all' : lang === 'DE' ? 'Alle auswählen' : 'Tout sélectionner'}
+                                                </button>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {suggestedFields.map((suggestion, idx) => (
+                                                    <label
+                                                        key={idx}
+                                                        className="flex items-start gap-3 p-3 bg-gray-800 rounded border-2 border-transparent hover:border-yellow-500 cursor-pointer transition-colors"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedSuggestedFields.has(suggestion.field)}
+                                                            onChange={(e) => {
+                                                                const newSelected = new Set(selectedSuggestedFields);
+                                                                if (e.target.checked) {
+                                                                    newSelected.add(suggestion.field);
+                                                                } else {
+                                                                    newSelected.delete(suggestion.field);
+                                                                }
+                                                                setSelectedSuggestedFields(newSelected);
+                                                            }}
+                                                            className="mt-1 w-5 h-5 text-yellow-600 border-gray-600 rounded focus:ring-yellow-500"
+                                                        />
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="font-mono font-bold text-yellow-300 text-sm">
+                                                                    {`{{${suggestion.field}}}`}
+                                                                </span>
+                                                                <span className="text-xs bg-yellow-600/30 text-yellow-300 px-2 py-0.5 rounded">
+                                                                    {suggestion.confidence}%
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-sm text-gray-300 mb-1">{suggestion.description}</p>
+                                                            <p className="text-xs text-gray-500 italic">Ejemplo: {suggestion.example}</p>
+                                                        </div>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={handleGenerateTemplateFromSuggestions}
+                                                disabled={selectedSuggestedFields.size === 0}
+                                                className="flex-1 bg-yellow-600 hover:bg-yellow-500 text-black border-4 border-yellow-500 font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <FileSpreadsheet className="w-5 h-5" />
+                                                {lang === 'ES' 
+                                                    ? `📥 GENERAR PLANTILLA (${selectedSuggestedFields.size} campos)` 
+                                                    : lang === 'EN'
+                                                    ? `📥 GENERATE TEMPLATE (${selectedSuggestedFields.size} fields)`
+                                                    : lang === 'DE'
+                                                    ? `📥 VORLAGE GENERIEREN (${selectedSuggestedFields.size} Felder)`
+                                                    : `📥 GÉNÉRER MODÈLE (${selectedSuggestedFields.size} champs)`}
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setSuggestedFields([]);
+                                                    setSelectedSuggestedFields(new Set());
+                                                }}
+                                                className="bg-gray-700 hover:bg-gray-600 text-white border-2 border-gray-600 font-bold py-3 px-4 rounded-lg transition-colors"
+                                            >
+                                                {lang === 'ES' ? 'Limpiar' : lang === 'EN' ? 'Clear' : lang === 'DE' ? 'Löschen' : 'Effacer'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Excel Template Input */}
                         <div>
-                            <label className="block text-left text-emerald-300 font-bold mb-2">2. Sube tu Plantilla Excel con Marcadores:</label>
+                            <label className="block text-left text-emerald-300 font-bold mb-2">
+                                {lang === 'ES' ? '2. Sube tu Plantilla Excel con Marcadores (Opcional si usaste el generador automático):' : lang === 'EN' ? '2. Upload your Excel Template with Markers (Optional if you used the auto generator):' : lang === 'DE' ? '2. Laden Sie Ihre Excel-Vorlage mit Markern hoch (Optional, wenn Sie den Auto-Generator verwendet haben):' : '2. Téléchargez votre Modèle Excel avec Marqueurs (Optionnel si vous avez utilisé le générateur automatique):'}
+                            </label>
                             <input 
                                 type="file" 
                                 accept=".xlsx,.xls" 
@@ -1370,80 +1610,7 @@ const App: React.FC = () => {
                             )}
                         </div>
 
-                        {/* Tutorial Section - Compact */}
-                        <div className="bg-emerald-900/30 border-2 border-emerald-800 p-4 text-left space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div className="text-emerald-200 font-bold text-lg">📚 {t.excelTemplateTutorial}</div>
-                                <button
-                                    onClick={() => setShowFullTutorial(!showFullTutorial)}
-                                    className="text-emerald-400 hover:text-emerald-300 text-sm font-bold underline"
-                                >
-                                    {showFullTutorial ? (lang === 'ES' ? 'Ver menos' : 'Show less') : (lang === 'ES' ? 'Ver más' : 'Show more')}
-                                </button>
-                            </div>
-                            <div className="text-sm text-emerald-300">
-                                {t.excelTemplateTutorialDesc}
-                            </div>
-                            
-                            {/* Example 1 - Always Visible */}
-                            <div>
-                                <div className="text-emerald-200 font-bold mb-2 text-xs">Ejemplo 1: Plantilla con 1 fila (para 1 factura)</div>
-                                <div className="bg-gray-900 border border-emerald-700 p-3 rounded">
-                                    <table className="w-full text-xs border-collapse">
-                                        <thead>
-                                            <tr className="bg-emerald-900/50">
-                                                <th className="border border-emerald-700 p-2 text-left">FECHA</th>
-                                                <th className="border border-emerald-700 p-2 text-left">EMPRESA</th>
-                                                <th className="border border-emerald-700 p-2 text-left">TOTAL</th>
-                                                <th className="border border-emerald-700 p-2 text-left">IMPUESTO</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{FECHA}}"}</code></td>
-                                                <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{EMPRESA}}"}</code></td>
-                                                <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{TOTAL}}"}</code></td>
-                                                <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{IMPUESTO}}"}</code></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            
-                            {/* Example 2 - Collapsible */}
-                            {showFullTutorial && (
-                                <div className="space-y-3">
-                                    <div>
-                                        <div className="text-emerald-200 font-bold mb-2 text-xs">Ejemplo 2: Plantilla con 6 filas (para 6 facturas)</div>
-                                        <div className="bg-gray-900 border border-emerald-700 p-3 rounded max-h-64 overflow-y-auto">
-                                            <table className="w-full text-xs border-collapse">
-                                                <thead className="sticky top-0 bg-emerald-900/50">
-                                                    <tr>
-                                                        <th className="border border-emerald-700 p-2 text-left">FECHA</th>
-                                                        <th className="border border-emerald-700 p-2 text-left">EMPRESA</th>
-                                                        <th className="border border-emerald-700 p-2 text-left">TOTAL</th>
-                                                        <th className="border border-emerald-700 p-2 text-left">IMPUESTO</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {[1, 2, 3, 4, 5, 6].map((row) => (
-                                                        <tr key={row}>
-                                                            <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{FECHA}}"}</code></td>
-                                                            <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{EMPRESA}}"}</code></td>
-                                                            <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{TOTAL}}"}</code></td>
-                                                            <td className="border border-emerald-700 p-2 bg-emerald-800/30"><code>{"{{IMPUESTO}}"}</code></td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <div className="text-xs text-emerald-400 mt-2 italic">
-                                            ⚠️ Importante: Si subes 6 PDFs, tu plantilla debe tener 6 filas con marcadores. Cada fila será reemplazada con los datos de una factura.
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        {/* Tutorial removido - ya no es necesario con duplicación automática de filas */}
 
                         {/* Info Box - Marcadores y Extracción Dirigida (Side by Side) */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1522,6 +1689,37 @@ const App: React.FC = () => {
                                 )}
                             </div>
                         </div>
+
+                        {/* Opción de renombrar archivos */}
+                        {pdfsForTemplate.length > 0 && excelTemplate && (
+                            <div className="bg-indigo-900/30 border-2 border-indigo-600 rounded-lg p-4">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={renameFiles}
+                                        onChange={(e) => setRenameFiles(e.target.checked)}
+                                        className="w-5 h-5 text-indigo-600 border-gray-600 rounded focus:ring-indigo-500"
+                                    />
+                                    <div>
+                                        <div className="text-indigo-200 font-bold text-lg">
+                                            {lang === 'ES' ? '📝 Renombrar archivos PDF automáticamente' : 
+                                             lang === 'EN' ? '📝 Automatically rename PDF files' :
+                                             lang === 'DE' ? '📝 PDF-Dateien automatisch umbenennen' :
+                                             '📝 Renommer automatiquement les fichiers PDF'}
+                                        </div>
+                                        <div className="text-indigo-300 text-sm mt-1">
+                                            {lang === 'ES' 
+                                                ? 'Los archivos se renombrarán usando: Fecha_Empresa_Numero.pdf y se descargarán en un ZIP junto con el Excel.'
+                                                : lang === 'EN'
+                                                ? 'Files will be renamed using: Date_Company_Number.pdf and downloaded in a ZIP along with the Excel.'
+                                                : lang === 'DE'
+                                                ? 'Dateien werden umbenannt mit: Datum_Unternehmen_Nummer.pdf und in einem ZIP zusammen mit dem Excel heruntergeladen.'
+                                                : 'Les fichiers seront renommés en utilisant: Date_Entreprise_Numero.pdf et téléchargés dans un ZIP avec l\'Excel.'}
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        )}
 
                         {/* Progress Bar */}
                         {isTemplateProcessing && templateProgress.total > 0 && (

@@ -8,6 +8,42 @@ interface NavbarProps {
   t: any;
 }
 
+// Componentes SVG de banderas
+const FlagES: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg viewBox="0 0 640 480" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect width="640" height="480" fill="#AA151B"/>
+    <rect y="120" width="640" height="120" fill="#F1BF00"/>
+    <rect y="240" width="640" height="120" fill="#AA151B"/>
+  </svg>
+);
+
+const FlagGB: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg viewBox="0 0 640 480" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect width="640" height="480" fill="#012169"/>
+    <path d="M0 0h640v480H0z" fill="#012169"/>
+    <path d="M75 0l244 181L562 0h78v62L400 241l240 178v61h-80L320 301 81 480H0v-60l239-178L0 64V0h75z" fill="#FFF"/>
+    <path d="M424 281l216 159v40L369 281h55zm-184 20l6 35L54 480H0l240-179zM640 0v3L391 191l2-44L590 0h50zM0 0l239 176h-60L0 42V0z" fill="#C8102E"/>
+    <path d="M241 0v480h160V0H241zM0 160v160h640V160H0z" fill="#FFF"/>
+    <path d="M0 193v96h640v-96H0zM273 0v480h96V0h-96z" fill="#C8102E"/>
+  </svg>
+);
+
+const FlagDE: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg viewBox="0 0 640 480" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect width="640" height="160" fill="#000"/>
+    <rect y="160" width="640" height="160" fill="#DD0000"/>
+    <rect y="320" width="640" height="160" fill="#FFCE00"/>
+  </svg>
+);
+
+const FlagFR: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg viewBox="0 0 640 480" className={className} xmlns="http://www.w3.org/2000/svg">
+    <rect width="213.3" height="480" fill="#002654"/>
+    <rect x="213.3" width="213.3" height="480" fill="#FFF"/>
+    <rect x="426.6" width="213.3" height="480" fill="#ED2939"/>
+  </svg>
+);
+
 const Navbar: React.FC<NavbarProps> = ({ lang, setLang, t }) => {
   const location = useLocation();
   
@@ -33,17 +69,27 @@ const Navbar: React.FC<NavbarProps> = ({ lang, setLang, t }) => {
       </Link>
 
       <div className="flex gap-4 items-center">
-          {/* Lang Selector */}
+          {/* Lang Selector con banderas */}
           <div className="flex bg-black border border-gray-700 rounded p-1">
-              {(['ES', 'EN', 'DE', 'FR'] as Language[]).map((l) => (
+              {([
+                { code: 'ES' as Language, Flag: FlagES, name: 'ES' },
+                { code: 'EN' as Language, Flag: FlagGB, name: 'EN' },
+                { code: 'DE' as Language, Flag: FlagDE, name: 'DE' },
+                { code: 'FR' as Language, Flag: FlagFR, name: 'FR' }
+              ]).map((item) => {
+                const FlagComponent = item.Flag;
+                return (
                   <button 
-                    key={l}
-                    onClick={() => setLang(l)}
-                    className={`px-2 py-1 text-xs font-bold font-vt323 transition-colors ${lang === l ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                    key={item.code}
+                    onClick={() => setLang(item.code)}
+                    className={`px-2 py-1 text-xs font-bold transition-colors flex items-center gap-1.5 ${lang === item.code ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                    title={item.code === 'ES' ? 'Español' : item.code === 'EN' ? 'English' : item.code === 'DE' ? 'Deutsch' : 'Français'}
                   >
-                      {l}
+                      <FlagComponent className="w-4 h-3 flex-shrink-0" />
+                      <span className="font-vt323">{item.name}</span>
                   </button>
-              ))}
+                );
+              })}
           </div>
 
           <Link 

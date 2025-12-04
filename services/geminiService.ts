@@ -802,3 +802,120 @@ ${conversationHistory ? `--- HISTORIAL DE CONVERSACIÓN ---\n\n${conversationHis
     throw error;
   }
 };
+
+/**
+ * Analiza múltiples facturas del mismo proveedor y sugiere automáticamente los campos de la plantilla
+ * Estrategia "Francotirador con Miraláser": Detecta patrones comunes en las facturas
+ * @param texts - Array de textos extraídos de las facturas (5-10 facturas recomendadas)
+ * @param lang - Idioma para el análisis
+ * @returns Array de campos sugeridos con descripción y ejemplos
+ */
+export const analyzeInvoicesAndSuggestFields = async (
+  texts: string[],
+  lang: Language = 'ES'
+): Promise<Array<{ field: string; description: string; example: string; confidence: number }>> => {
+  try {
+    if (texts.length === 0) {
+      throw new Error('No se proporcionaron textos de facturas');
+    }
+
+    // Combinar los primeros 10000 caracteres de cada factura para el análisis
+    const combinedText = texts
+      .map((text, idx) => `=== FACTURA ${idx + 1} ===\n${text.substring(0, 10000)}`)
+      .join('\n\n');
+
+    const langInstructions = lang === 'ES'
+      ? "Analiza las facturas en español. Identifica campos comunes y patrones."
+      : lang === 'EN'
+      ? "Analyze invoices in English. Identify common fields and patterns."
+      : lang === 'DE'
+      ? "Analysiere Rechnungen auf Deutsch. Identifiziere gemeinsame Felder und Muster."
+      : "Analysez les factures en français. Identifiez les champs communs et les modèles.";
+
+    const prompt = `
+    Eres un experto en análisis de facturas y extracción de datos estructurados.
+    
+    ${langInstructions}
+    
+    TAREA: Analiza las ${texts.length} facturas proporcionadas y detecta automáticamente los campos más importantes y comunes que aparecen en TODAS o la mayoría de ellas.
+    
+    INSTRUCCIONES CRÍTICAS:
+    1. Identifica campos que aparecen de forma CONSISTENTE en las facturas
+    2. Busca patrones comunes: fechas, totales, números de factura, empresas, impuestos, etc.
+    3. Para cada campo detectado, proporciona:
+       - Nombre del campo (en mayúsculas, sin espacios, usar guiones bajos: ej: FECHA, TOTAL, NIF_PROVEEDOR)
+       - Descripción breve de qué es
+       - Un ejemplo real extraído de una de las facturas
+       - Nivel de confianza (0-100) de qué tan común es este campo
+    
+    4. Prioriza campos que aparecen en al menos el 80% de las facturas
+    5. Incluye campos estándar: FECHA, TOTAL, EMPRESA, NUMERO_FACTURA, IMPUESTO, etc.
+    6. También detecta campos personalizados específicos del proveedor (ej: CODIGO_PEDIDO, NUMERO_LOTE, etc.)
+    
+    FACTURAS A ANALIZAR:
+    ${combinedText}
+    
+    Devuelve un JSON con el siguiente formato:
+    {
+      "suggestedFields": [
+        {
+          "field": "FECHA",
+          "description": "Fecha de emisión de la factura",
+          "example": "15/03/2024",
+          "confidence": 100
+        },
+        {
+          "field": "TOTAL",
+          "description": "Importe total de la factura",
+          "example": "1250.50",
+          "confidence": 100
+        }
+        // ... más campos
+      ]
+    }
+    `;
+
+    const responseSchema: Schema = {
+      type: Type.OBJECT,
+      properties: {
+        suggestedFields: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              field: { type: Type.STRING, description: "Nombre del campo en mayúsculas (ej: FECHA, TOTAL)" },
+              description: { type: Type.STRING, description: "Descripción del campo" },
+              example: { type: Type.STRING, description: "Ejemplo real extraído de una factura" },
+              confidence: { type: Type.INTEGER, description: "Nivel de confianza 0-100" }
+            },
+            required: ["field", "description", "example", "confidence"]
+          }
+        }
+      },
+      required: ["suggestedFields"]
+    };
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-lite',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: responseSchema,
+        temperature: 0.3, // Baja temperatura para análisis preciso
+      },
+    });
+
+    if (response.text) {
+      const result = JSON.parse(response.text);
+      // Ordenar por confianza descendente
+      return result.suggestedFields
+        .sort((a: any, b: any) => b.confidence - a.confidence)
+        .slice(0, 20); // Limitar a 20 campos más relevantes
+    }
+
+    throw new Error("Failed to analyze invoices");
+  } catch (error) {
+    console.error("Error analyzing invoices:", error);
+    throw error;
+  }
+};

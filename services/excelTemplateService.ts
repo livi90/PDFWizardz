@@ -1,7 +1,62 @@
 import * as XLSX from 'xlsx';
 import saveAs from 'file-saver';
+import JSZip from 'jszip';
 import { extractTextFromPdf } from './pdfService';
 import { extractStructuredData } from './geminiService';
+
+/**
+ * Genera una plantilla Excel automáticamente desde campos sugeridos
+ * @param fields - Array de campos sugeridos con sus nombres
+ * @param filename - Nombre del archivo a generar
+ */
+export const generateTemplateFromFields = (fields: string[], filename: string = 'plantilla_auto.xlsx'): void => {
+  try {
+    // Crear un nuevo workbook
+    const workbook = XLSX.utils.book_new();
+    
+    // Crear worksheet con encabezados
+    const headers = fields.map(field => field);
+    const data = [headers, fields.map(() => '')]; // Fila de encabezados + fila vacía con marcadores
+    
+    // Agregar marcadores en la segunda fila
+    for (let col = 0; col < fields.length; col++) {
+      data[1][col] = `{{${fields[col]}}}`;
+    }
+    
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    
+    // Estilizar encabezados (fila 1)
+    const headerRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+      if (!worksheet[cellAddress]) continue;
+      worksheet[cellAddress].s = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "4F46E5" } }, // Indigo
+        alignment: { horizontal: "center", vertical: "center" }
+      };
+    }
+    
+    // Agregar worksheet al workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Facturas');
+    
+    // Generar archivo
+    const excelBuffer = XLSX.write(workbook, {
+      type: 'array',
+      bookType: 'xlsx',
+      cellStyles: true
+    });
+    
+    const blob = new Blob([excelBuffer], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    
+    saveAs(blob, filename);
+  } catch (error) {
+    console.error('Error generando plantilla:', error);
+    throw new Error(`Error al generar la plantilla: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+  }
+};
 
 /**
  * Escanea un archivo Excel y extrae todas las claves (variables) definidas por el usuario
@@ -69,7 +124,8 @@ export const fillExcelTemplate = async (
   lang: 'ES' | 'EN' = 'ES',
   onProgress?: (current: number, total: number) => void,
   targetKeys?: string[], // Claves específicas a buscar (extracción dirigida)
-  forceOCR: boolean = false // Forzar OCR para PDFs escaneados
+  forceOCR: boolean = false, // Forzar OCR para PDFs escaneados
+  renameFiles: boolean = false // Renombrar archivos basándose en datos extraídos
 ): Promise<void> => {
   try {
     if (pdfFiles.length === 0) {
@@ -117,6 +173,8 @@ export const fillExcelTemplate = async (
     });
     
     // 2. Procesar cada PDF y agregarlo como fila
+    const renamedFiles: Array<{ originalName: string; newName: string; file: File }> = [];
+    
     for (let pdfIndex = 0; pdfIndex < pdfFiles.length; pdfIndex++) {
       const pdfFile = pdfFiles[pdfIndex];
       
@@ -129,6 +187,16 @@ export const fillExcelTemplate = async (
       
       // 2.2. Extraer datos estructurados usando Gemini (con claves dirigidas si se proporcionan)
       const extractedData = await extractStructuredData(pdfText, lang, targetKeys);
+      
+      // 2.2.5. Generar nombre de archivo si está habilitado el renombrado
+      if (renameFiles) {
+        const newFileName = generateFileNameFromData(extractedData, pdfFile.name, lang);
+        renamedFiles.push({
+          originalName: pdfFile.name,
+          newName: newFileName,
+          file: pdfFile
+        });
+      }
       
       // 2.3. Procesar todas las hojas del workbook
       workbook.SheetNames.forEach(sheetName => {
@@ -182,13 +250,103 @@ export const fillExcelTemplate = async (
     // Agregar el sufijo y la extensión correcta
     outputFileName = `${outputFileName}_relleno_${pdfFiles.length}_facturas.xlsx`;
     
-    saveAs(blob, outputFileName);
+    // 4.5. Si está habilitado el renombrado, crear ZIP con archivos renombrados
+    if (renameFiles && renamedFiles.length > 0) {
+      const zip = new JSZip();
+      
+      // Agregar Excel al ZIP
+      zip.file(outputFileName, excelBuffer);
+      
+      // Agregar PDFs renombrados al ZIP
+      for (const renamedFile of renamedFiles) {
+        zip.file(renamedFile.newName, renamedFile.file);
+      }
+      
+      // Generar y descargar ZIP
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      saveAs(zipBlob, `facturas_procesadas_${Date.now()}.zip`);
+    } else {
+      // Solo descargar Excel
+      saveAs(blob, outputFileName);
+    }
     
   } catch (error) {
     console.error('Error procesando plantilla Excel:', error);
     throw new Error(`Error al procesar la plantilla: ${error instanceof Error ? error.message : 'Error desconocido'}`);
   }
 };
+
+/**
+ * Genera un nombre de archivo basado en los datos extraídos
+ * Formato: YYYY-MM-DD_Empresa_Numero.pdf
+ */
+function generateFileNameFromData(data: Record<string, any>, originalName: string, lang: 'ES' | 'EN' = 'ES'): string {
+  // Extraer componentes
+  let fecha = data.fecha || data.date || '';
+  let empresa = data.empresa || data.company || data.proveedor || data.supplier || '';
+  let numero = data.numero || data.number || data.numero_factura || data.invoice_number || '';
+  let total = data.total || data.total_amount || '';
+  
+  // Normalizar fecha (convertir a YYYY-MM-DD)
+  if (fecha) {
+    // Intentar parsear diferentes formatos
+    const dateMatch = fecha.match(/(\d{4})[-\/](\d{2})[-\/](\d{2})/) || fecha.match(/(\d{2})[-\/](\d{2})[-\/](\d{4})/);
+    if (dateMatch) {
+      if (dateMatch[1].length === 4) {
+        fecha = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+      } else {
+        fecha = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+      }
+    } else {
+      fecha = fecha.replace(/[^0-9]/g, '').substring(0, 8);
+      if (fecha.length === 8) {
+        fecha = `${fecha.substring(0, 4)}-${fecha.substring(4, 6)}-${fecha.substring(6, 8)}`;
+      }
+    }
+  }
+  
+  // Normalizar empresa (limpiar caracteres especiales, limitar longitud)
+  if (empresa) {
+    empresa = empresa
+      .replace(/[^a-zA-Z0-9\s]/g, '')
+      .replace(/\s+/g, '_')
+      .substring(0, 30)
+      .trim();
+  }
+  
+  // Normalizar número (limpiar caracteres especiales)
+  if (numero) {
+    numero = numero
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .substring(0, 20)
+      .trim();
+  }
+  
+  // Construir nombre
+  const parts: string[] = [];
+  if (fecha) parts.push(fecha);
+  if (empresa) parts.push(empresa);
+  if (numero) parts.push(numero);
+  
+  // Si no hay datos suficientes, usar nombre original con timestamp
+  if (parts.length === 0) {
+    return `factura_${Date.now()}.pdf`;
+  }
+  
+  let newName = parts.join('_');
+  
+  // Asegurar extensión .pdf
+  if (!newName.toLowerCase().endsWith('.pdf')) {
+    newName += '.pdf';
+  }
+  
+  // Limitar longitud total
+  if (newName.length > 200) {
+    newName = newName.substring(0, 200) + '.pdf';
+  }
+  
+  return newName;
+}
 
 /**
  * Encuentra la fila que contiene marcadores (fila plantilla)
@@ -396,4 +554,3 @@ function findValueInData(data: Record<string, any>, markerName: string): any {
   
   return null;
 }
-

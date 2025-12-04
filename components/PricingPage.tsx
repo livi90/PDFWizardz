@@ -141,12 +141,6 @@ const PricingPage: React.FC<PricingPageProps> = ({
                 {t.pricingPremiumPlan || 'Plan Premium'}
               </h2>
               <div className="text-4xl font-bold text-yellow-400 mb-2">€4,99</div>
-              <p className="text-xs text-yellow-300 mb-1">
-                {lang === 'ES' ? 'Con código de descuento 40%: €2,99' : 
-                 lang === 'EN' ? 'With 40% discount code: €2.99' :
-                 lang === 'DE' ? 'Mit 40% Rabattcode: €2,99' :
-                 'Avec code de réduction 40%: €2,99'}
-              </p>
               <p className="text-gray-400">{t.pricingPremiumDesc || 'Todo el poder desbloqueado'}</p>
             </div>
 
@@ -190,12 +184,6 @@ const PricingPage: React.FC<PricingPageProps> = ({
                 >
                   💳 {t.pricingBuyPremium || 'COMPRAR PREMIUM (€4,99)'}
                 </a>
-                <p className="text-xs text-yellow-300 text-center mb-2">
-                  {lang === 'ES' ? 'Con código de descuento 40%: €2,99' : 
-                   lang === 'EN' ? 'With 40% discount code: €2.99' :
-                   lang === 'DE' ? 'Mit 40% Rabattcode: €2,99' :
-                   'Avec code de réduction 40%: €2,99'}
-                </p>
                 <button
                   onClick={() => setShowActivator(true)}
                   className="w-full bg-gray-700 text-white border-2 border-gray-600 hover:bg-gray-600 transition-colors font-bold py-3 text-base"
@@ -222,12 +210,6 @@ const PricingPage: React.FC<PricingPageProps> = ({
                 {t.pricingPlatinumPlan || 'Plan Platinum+'}
               </h2>
               <div className="text-4xl font-bold text-yellow-400 mb-2">€8</div>
-              <p className="text-xs text-yellow-300 mb-1">
-                {lang === 'ES' ? 'Con código de descuento 40%: €4,80' : 
-                 lang === 'EN' ? 'With 40% discount code: €4.80' :
-                 lang === 'DE' ? 'Mit 40% Rabattcode: €4,80' :
-                 'Avec code de réduction 40%: €4,80'}
-              </p>
               <p className="text-gray-400">{t.pricingPlatinumDesc || 'Máximo rendimiento'}</p>
             </div>
 
@@ -272,12 +254,6 @@ const PricingPage: React.FC<PricingPageProps> = ({
                   <Star className="w-6 h-6" />
                   💳 {t.pricingBuyPlatinum || 'COMPRAR PLATINUM+ (€8)'}
                 </a>
-                <p className="text-xs text-yellow-300 text-center mb-2">
-                  {lang === 'ES' ? 'Con código de descuento 40%: €4,80' : 
-                   lang === 'EN' ? 'With 40% discount code: €4.80' :
-                   lang === 'DE' ? 'Mit 40% Rabattcode: €4,80' :
-                   'Avec code de réduction 40%: €4,80'}
-                </p>
                 <button
                   onClick={() => setShowActivator(true)}
                   className="w-full bg-gray-700 text-white border-2 border-gray-600 hover:bg-gray-600 transition-colors font-bold py-3 text-base"
