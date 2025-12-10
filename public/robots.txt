@@ -4,16 +4,28 @@ Allow: /
 # Sitemap (actualizar con tu dominio real)
 Sitemap: https://pdfwizardz.app/sitemap.xml
 
+# Permitir blog y artículos
+Allow: /blog
+Allow: /blog/
+Allow: /posts/
+Allow: /*.md$
+
 # Bloquear archivos de desarrollo
 Disallow: /node_modules/
 Disallow: /dist/
-Disallow: /*.json$
+Disallow: /data/
 Disallow: /vite.config.*
 Disallow: /tsconfig.json
 
 # Permitir recursos estáticos
 Allow: /Images/
 Allow: /assets/
+Allow: /icons/
 Allow: /*.css$
 Allow: /*.js$
-
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.svg$
+Allow: /*.webp$

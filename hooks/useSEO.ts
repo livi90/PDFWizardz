@@ -381,6 +381,28 @@ const seoMetadata: Record<ViewType, Record<Language, SEOMetadata>> = {
       description: 'Rejoignez notre programme d\'affiliation et gagnez des commissions sur chaque vente que vous générez. Parfait pour les influenceurs, créateurs de contenu et professionnels du marketing. Commissions attractives, outils de suivi en temps réel et matériaux marketing prêts à l\'emploi.',
       keywords: 'programme affiliation PDF, gagner argent recommandant, PDF Wizardz affiliés, commissions PDF, marketing affiliation, programme parrainage PDF, gagner argent en ligne, affiliés influenceurs'
     }
+  },
+  BLOG: {
+    ES: {
+      title: 'Blog - Artículos y Tutoriales sobre PDFs - PDF Wizardz',
+      description: 'Descubre artículos, tutoriales y consejos sobre cómo trabajar con PDFs, organizar documentos, extraer datos y aprovechar al máximo las herramientas de PDF. Todo sobre procesamiento de PDFs, privacidad y automatización.',
+      keywords: 'blog PDF, tutoriales PDF, artículos PDF, consejos PDF, guías PDF, procesamiento PDF, organizar PDF, extraer datos PDF'
+    },
+    EN: {
+      title: 'Blog - Articles and Tutorials about PDFs - PDF Wizardz',
+      description: 'Discover articles, tutorials and tips on how to work with PDFs, organize documents, extract data and get the most out of PDF tools. Everything about PDF processing, privacy and automation.',
+      keywords: 'PDF blog, PDF tutorials, PDF articles, PDF tips, PDF guides, PDF processing, organize PDF, extract PDF data'
+    },
+    DE: {
+      title: 'Blog - Artikel und Tutorials über PDFs - PDF Wizardz',
+      description: 'Entdecken Sie Artikel, Tutorials und Tipps zum Arbeiten mit PDFs, Organisieren von Dokumenten, Extrahieren von Daten und optimalen Nutzen von PDF-Tools. Alles über PDF-Verarbeitung, Privatsphäre und Automatisierung.',
+      keywords: 'PDF Blog, PDF Tutorials, PDF Artikel, PDF Tipps, PDF Anleitungen, PDF Verarbeitung, PDF organisieren, PDF Daten extrahieren'
+    },
+    FR: {
+      title: 'Blog - Articles et Tutoriels sur les PDFs - PDF Wizardz',
+      description: 'Découvrez des articles, tutoriels et conseils sur la façon de travailler avec les PDFs, organiser des documents, extraire des données et tirer le meilleur parti des outils PDF. Tout sur le traitement PDF, la confidentialité et l\'automatisation.',
+      keywords: 'blog PDF, tutoriels PDF, articles PDF, conseils PDF, guides PDF, traitement PDF, organiser PDF, extraire données PDF'
+    }
   }
 };
 

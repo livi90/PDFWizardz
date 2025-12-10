@@ -234,8 +234,7 @@ export const fillExcelTemplate = async (
     const excelBuffer = XLSX.write(workbook, {
       type: 'array',
       bookType: 'xlsx',
-      cellStyles: true,
-      cellNF: true
+      cellStyles: true
     });
     
     // 4. Descargar el archivo

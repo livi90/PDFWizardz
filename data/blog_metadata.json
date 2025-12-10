@@ -1,0 +1,90 @@
+[
+  {
+    "id": "articulo-1",
+    "title": "Ahorra Horas: La Guía Definitiva para Fusionar y Dividir Documentos PDF en Menos de 5 Minutos",
+    "description": "Aprende a fusionar y dividir PDFs de forma profesional. Guía completa con casos de uso, métodos eficientes y herramientas que ahorran tiempo. Optimiza tu flujo de trabajo con documentos PDF.",
+    "author": "PDF Wizardz",
+    "date": "2024-12-10",
+    "category": "Tutoriales",
+    "tags": ["Fusionar PDF", "Dividir PDF", "Tutorial", "Productividad"],
+    "image": "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1200&h=630&fit=crop&q=80",
+    "readTime": "10 min"
+  },
+  {
+    "id": "articulo-2",
+    "title": "5 Trucos Pro para Organizar tus PDFs y Encontrar lo que Necesitas en Segundos",
+    "description": "Descubre 5 estrategias profesionales para organizar tus PDFs eficientemente. Aprende sistemas de nomenclatura, estructura de carpetas, uso de metadatos y automatización con IA para encontrar documentos en segundos.",
+    "author": "PDF Wizardz",
+    "date": "2024-12-11",
+    "category": "Consejos",
+    "tags": ["Organizar PDF", "Productividad", "Consejos", "Organización"],
+    "image": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=630&fit=crop&q=80",
+    "readTime": "5 min"
+  },
+  {
+    "id": "articulo-3",
+    "title": "De Imagen a Texto Editable: La Magia del OCR y la Conversión de PDF a Word/Excel",
+    "description": "Descubre cómo funciona el OCR (Reconocimiento Óptico de Caracteres) y aprende a convertir documentos escaneados en texto editable. Guía completa sobre conversión de PDF a Word y Excel con precisión.",
+    "author": "PDF Wizardz",
+    "date": "2024-12-12",
+    "category": "Tutoriales",
+    "tags": ["OCR", "Conversión PDF", "Word", "Excel", "Tecnología"],
+    "image": "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=1200&h=630&fit=crop&q=80",
+    "readTime": "15 min"
+  },
+  {
+    "id": "articulo-4",
+    "title": "¿Cómo Firmar Documentos PDF Digitalmente de Forma Legal y Segura? Guía para Profesionales",
+    "description": "Guía completa sobre firmas digitales legales en PDFs. Aprende las diferencias entre firma digital y electrónica, requisitos legales, y cómo implementar firmas seguras que sean válidas en tribunales.",
+    "author": "PDF Wizardz",
+    "date": "2024-12-13",
+    "category": "Legal",
+    "tags": ["Firma Digital", "Legal", "Seguridad", "PDF Profesional"],
+    "image": "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=1200&h=630&fit=crop&q=80",
+    "readTime": "20 min"
+  },
+  {
+    "id": "articulo-5",
+    "title": "¡Adiós a los Errores! La Guía para Crear Plantillas de Excel Personalizadas y Convertirlas a PDF Profesional",
+    "description": "Aprende a crear plantillas de Excel profesionales y convertirlas a PDF sin perder formato. Elimina errores, garantiza consistencia y proyecta profesionalismo en cada documento.",
+    "author": "PDF Wizardz",
+    "date": "2024-12-14",
+    "category": "Tutoriales",
+    "tags": ["Excel", "Plantillas", "PDF Profesional", "Productividad"],
+    "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=630&fit=crop&q=80",
+    "readTime": "18 min"
+  },
+  {
+    "id": "articulo-6",
+    "title": "Optimización y Velocidad: Cómo Reducir el Tamaño de un PDF sin Perder NADA de Calidad",
+    "description": "Técnicas avanzadas para reducir el tamaño de PDFs manteniendo la calidad. Aprende sobre compresión de imágenes, optimización de fuentes y métodos profesionales de reducción de tamaño.",
+    "author": "PDF Wizardz",
+    "date": "2024-12-15",
+    "category": "Optimización",
+    "tags": ["Optimización PDF", "Reducir Tamaño", "Compresión", "Calidad"],
+    "image": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=630&fit=crop&q=80",
+    "readTime": "20 min"
+  },
+  {
+    "id": "articulo-7",
+    "title": "PDF vs. DOCX: ¿Cuál es el Mejor Formato para Compartir Documentos Profesionales y Por Qué?",
+    "description": "Comparación detallada entre PDF y DOCX. Descubre cuándo usar cada formato, sus ventajas y desventajas, y cómo elegir el formato correcto para cada situación profesional.",
+    "author": "PDF Wizardz",
+    "date": "2024-12-16",
+    "category": "Comparativas",
+    "tags": ["PDF", "DOCX", "Word", "Comparación", "Formato"],
+    "image": "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1200&h=630&fit=crop&q=80",
+    "readTime": "18 min"
+  },
+  {
+    "id": "articulo-8",
+    "title": "Los 7 Errores Más Comunes al Trabajar con PDFs (y Cómo Evitarlos con la Herramienta Correcta)",
+    "description": "Identifica y evita los errores más costosos al trabajar con PDFs. Desde metadata sensible hasta problemas de seguridad, aprende a protegerte y trabajar de forma profesional.",
+    "author": "PDF Wizardz",
+    "date": "2024-12-17",
+    "category": "Consejos",
+    "tags": ["Errores Comunes", "Seguridad PDF", "Mejores Prácticas", "Consejos"],
+    "image": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=630&fit=crop&q=80",
+    "readTime": "20 min"
+  }
+]

@@ -16,6 +16,8 @@ import TemplateEditor from './components/TemplateEditor';
 import ToolPage from './components/ToolPage';
 import AffiliateLanding from './components/AffiliateLanding';
 import { OcrSwitch } from './components/OcrSwitch';
+import BlogList from './components/BlogList';
+import BlogPost from './components/BlogPost';
 import { getPremiumStatus, getFeatureAccessStatus, consumeFreeTrialUse, getPlanLimits } from './services/gumroadService';
 import { usePdfProcessor } from './hooks/usePdfProcessor';
 import { mergePdfs, imagesToPdf, splitPdf, addWatermark, convertToText, convertToImages, convertToDocx, convertToExcel, convertToPptx } from './services/pdfTools';
@@ -50,6 +52,7 @@ const App: React.FC = () => {
     '/generador-test': 'LANDING_GENERADOR_TEST',
     '/modelo-tributario': 'LANDING_MODELO_TRIBUTARIO',
     '/afiliados': 'AFFILIATES',
+    '/blog': 'BLOG',
   };
   
   const currentView = routeToViewType[location.pathname] || 'HOME';
@@ -2158,6 +2161,8 @@ const App: React.FC = () => {
               onGoToHome={() => navigate('/')}
             />
           } />
+          <Route path="/blog" element={<BlogList lang={lang} />} />
+          <Route path="/blog/:id" element={<BlogPost lang={lang} />} />
         </Routes>
       </main>
 

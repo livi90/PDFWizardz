@@ -69,6 +69,14 @@ const Navbar: React.FC<NavbarProps> = ({ lang, setLang, t }) => {
       </Link>
 
       <div className="flex gap-4 items-center">
+          {/* Blog Link */}
+          <Link
+            to="/blog"
+            className="text-indigo-400 hover:text-indigo-300 font-bold font-vt323 text-sm md:text-base transition-colors hidden sm:block"
+          >
+            {lang === 'ES' ? '📝 BLOG' : lang === 'EN' ? '📝 BLOG' : lang === 'DE' ? '📝 BLOG' : '📝 BLOG'}
+          </Link>
+          
           {/* Lang Selector con banderas */}
           <div className="flex bg-black border border-gray-700 rounded p-1">
               {([
