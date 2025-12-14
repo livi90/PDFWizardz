@@ -1,0 +1,22 @@
+{
+  "schemas": [
+    {
+      "id": "a3",
+      "name": "A3 Contabilidad",
+      "file": "a3.json",
+      "description": "Formato de texto fijo para importación en A3 Contabilidad"
+    },
+    {
+      "id": "sage",
+      "name": "Sage",
+      "file": "sage.json",
+      "description": "Formato CSV delimitado por punto y coma para Sage"
+    },
+    {
+      "id": "contaplus",
+      "name": "ContaPlus",
+      "file": "contaplus.json",
+      "description": "Formato de texto fijo para importación en ContaPlus"
+    }
+  ]
+}

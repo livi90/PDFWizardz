@@ -1,0 +1,106 @@
+{
+  "name": "ContaPlus",
+  "version": "1.0",
+  "description": "Esquema de exportación para ContaPlus",
+  "encoding": "iso-8859-1",
+  "lineEnding": "\r\n",
+  "columns": [
+    {
+      "name": "ejercicio",
+      "position": 0,
+      "width": 4,
+      "type": "numeric",
+      "padding": "zero",
+      "align": "right",
+      "required": true,
+      "description": "Año del ejercicio (YYYY)"
+    },
+    {
+      "name": "periodo",
+      "position": 1,
+      "width": 2,
+      "type": "numeric",
+      "padding": "zero",
+      "align": "right",
+      "required": true,
+      "description": "Mes del período (01-12)"
+    },
+    {
+      "name": "fecha",
+      "position": 2,
+      "width": 8,
+      "type": "date",
+      "format": "DDMMYYYY",
+      "padding": "none",
+      "align": "left",
+      "required": true,
+      "description": "Fecha del asiento (DDMMYYYY)"
+    },
+    {
+      "name": "asiento",
+      "position": 3,
+      "width": 6,
+      "type": "numeric",
+      "padding": "zero",
+      "align": "right",
+      "required": true,
+      "description": "Número de asiento"
+    },
+    {
+      "name": "apunte",
+      "position": 4,
+      "width": 3,
+      "type": "numeric",
+      "padding": "zero",
+      "align": "right",
+      "required": true,
+      "description": "Número de apunte dentro del asiento"
+    },
+    {
+      "name": "cuenta",
+      "position": 5,
+      "width": 9,
+      "type": "string",
+      "padding": "space",
+      "align": "left",
+      "required": true,
+      "description": "Código de cuenta contable"
+    },
+    {
+      "name": "concepto",
+      "position": 6,
+      "width": 60,
+      "type": "string",
+      "padding": "space",
+      "align": "left",
+      "required": false,
+      "description": "Concepto del apunte"
+    },
+    {
+      "name": "debe",
+      "position": 7,
+      "width": 17,
+      "type": "numeric",
+      "format": "decimal",
+      "decimals": 2,
+      "padding": "zero",
+      "align": "right",
+      "required": false,
+      "description": "Importe al debe (sin separador de miles)"
+    },
+    {
+      "name": "haber",
+      "position": 8,
+      "width": 17,
+      "type": "numeric",
+      "format": "decimal",
+      "decimals": 2,
+      "padding": "zero",
+      "align": "right",
+      "required": false,
+      "description": "Importe al haber (sin separador de miles)"
+    }
+  ],
+  "separator": "",
+  "fixedWidth": true
+}

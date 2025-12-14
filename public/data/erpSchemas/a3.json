@@ -1,0 +1,86 @@
+{
+  "name": "A3 Contabilidad",
+  "version": "1.0",
+  "description": "Esquema de exportación para A3 Contabilidad",
+  "encoding": "windows-1252",
+  "lineEnding": "\r\n",
+  "columns": [
+    {
+      "name": "ejercicio",
+      "position": 0,
+      "width": 4,
+      "type": "numeric",
+      "padding": "zero",
+      "align": "right",
+      "required": true,
+      "description": "Año del ejercicio contable (YYYY)"
+    },
+    {
+      "name": "asiento",
+      "position": 1,
+      "width": 8,
+      "type": "numeric",
+      "padding": "zero",
+      "align": "right",
+      "required": true,
+      "description": "Número de asiento"
+    },
+    {
+      "name": "fecha",
+      "position": 2,
+      "width": 8,
+      "type": "date",
+      "format": "YYYYMMDD",
+      "padding": "none",
+      "align": "left",
+      "required": true,
+      "description": "Fecha del asiento (YYYYMMDD)"
+    },
+    {
+      "name": "cuenta",
+      "position": 3,
+      "width": 10,
+      "type": "string",
+      "padding": "space",
+      "align": "left",
+      "required": true,
+      "description": "Código de cuenta contable"
+    },
+    {
+      "name": "concepto",
+      "position": 4,
+      "width": 50,
+      "type": "string",
+      "padding": "space",
+      "align": "left",
+      "required": false,
+      "description": "Concepto del asiento"
+    },
+    {
+      "name": "debe",
+      "position": 5,
+      "width": 15,
+      "type": "numeric",
+      "format": "decimal",
+      "decimals": 2,
+      "padding": "zero",
+      "align": "right",
+      "required": false,
+      "description": "Importe al debe"
+    },
+    {
+      "name": "haber",
+      "position": 6,
+      "width": 15,
+      "type": "numeric",
+      "format": "decimal",
+      "decimals": 2,
+      "padding": "zero",
+      "align": "right",
+      "required": false,
+      "description": "Importe al haber"
+    }
+  ],
+  "separator": "",
+  "fixedWidth": true
+}

@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { Language } from '../types';
 import { getTranslation } from '../services/translations';
-import { X, Check, XCircle, AlertTriangle, Download, Edit2, Sparkles, Save } from 'lucide-react';
+import { X, Check, XCircle, AlertTriangle, Download, Edit2, Sparkles, Save, FileText } from 'lucide-react';
 import { downloadExcelWorkbook, generateFileNameFromData, normalizeValueForExcel } from '../services/excelTemplateService';
 import { analyzePdfContent } from '../services/geminiService';
 import { extractTextFromPdf } from '../services/pdfService';
+import { exportExcelToLegacyFormat, type ERPType, mapInvoiceToAccountingEntry, exportToLegacyFormat, type AccountingEntry } from '../services/legacyExportService';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
 
@@ -36,6 +37,8 @@ const ExcelReviewModal: React.FC<ExcelReviewModalProps> = ({
   const [reviewedData, setReviewedData] = useState<Array<{pdfName: string; data: Record<string, any>}>>(extractedData);
   const [reviewedWorkbook, setReviewedWorkbook] = useState<XLSX.WorkBook>(workbook);
   const [isRegenerating, setIsRegenerating] = useState<boolean>(false);
+  const [exportFormat, setExportFormat] = useState<'excel' | 'legacy'>('excel');
+  const [legacyERPType, setLegacyERPType] = useState<ERPType>('a3');
 
   // Calcular estadísticas de revisión
   const getReviewStats = () => {
@@ -162,9 +165,48 @@ const ExcelReviewModal: React.FC<ExcelReviewModalProps> = ({
     }
   };
 
-  // Descargar Excel final
+  // Descargar Excel final o formato Legacy
   const handleDownload = async () => {
     try {
+      if (exportFormat === 'legacy') {
+        // Exportar a formato Legacy ERP
+        const entries: AccountingEntry[] = [];
+        
+        for (let i = 0; i < reviewedData.length; i++) {
+          const entry = mapInvoiceToAccountingEntry(reviewedData[i].data, i + 1);
+          entries.push(entry);
+        }
+        
+        const filename = `asientos_${legacyERPType}_${Date.now()}.txt`;
+        await exportToLegacyFormat(entries, legacyERPType, filename);
+        
+        // Si está habilitado el renombrado, crear ZIP con archivos renombrados
+        if (renameFiles) {
+          const zip = new JSZip();
+          
+          // Agregar archivo legacy al ZIP
+          // Necesitamos regenerar el archivo legacy para el ZIP
+          const legacyBlob = await generateLegacyBlob(entries, legacyERPType);
+          zip.file(filename, legacyBlob);
+          
+          // Agregar PDFs renombrados
+          for (let i = 0; i < pdfFiles.length; i++) {
+            if (i < reviewedData.length) {
+              const newFileName = generateFileNameFromData(reviewedData[i].data, pdfFiles[i].name, lang);
+              zip.file(newFileName, pdfFiles[i]);
+            }
+          }
+          
+          const zipBlob = await zip.generateAsync({ type: 'blob' });
+          saveAs(zipBlob, `facturas_procesadas_${Date.now()}.zip`);
+        }
+        
+        onDownload();
+        onClose();
+        return;
+      }
+      
+      // Exportación Excel normal
       // Generar archivos renombrados si está habilitado
       const renamedFiles: Array<{ originalName: string; newName: string; file: File }> = [];
       
@@ -219,6 +261,38 @@ const ExcelReviewModal: React.FC<ExcelReviewModalProps> = ({
         ? 'Error al descargar: ' + (error instanceof Error ? error.message : 'Error desconocido')
         : 'Error downloading: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
+  };
+
+  // Helper para generar blob legacy (para ZIP)
+  const generateLegacyBlob = async (entries: AccountingEntry[], erpType: ERPType): Promise<Blob> => {
+    const legacyService = await import('../services/legacyExportService');
+    const schema = await legacyService.loadERPSchema(erpType);
+    const sortedColumns = [...schema.columns].sort((a, b) => a.position - b.position);
+    const lines: string[] = [];
+    
+    for (const entry of entries) {
+      let line = '';
+      if (schema.fixedWidth) {
+        for (const column of sortedColumns) {
+          const value = entry[column.name as keyof AccountingEntry];
+          const formatted = legacyService.formatValue(value, column);
+          line += formatted;
+        }
+      } else {
+        const values: string[] = [];
+        for (const column of sortedColumns) {
+          const value = entry[column.name as keyof AccountingEntry];
+          const formatted = legacyService.formatValue(value, column);
+          values.push(formatted);
+        }
+        line = values.join(schema.separator);
+      }
+      lines.push(line);
+    }
+    
+    const textContent = lines.join(schema.lineEnding);
+    const ansiBytes = legacyService.convertToANSI(textContent, schema.encoding);
+    return new Blob([ansiBytes], { type: 'text/plain;charset=' + schema.encoding });
   };
 
   return (
@@ -364,40 +438,92 @@ const ExcelReviewModal: React.FC<ExcelReviewModalProps> = ({
         </div>
 
         {/* Footer con acciones */}
-        <div className="p-3 sm:p-4 bg-gray-800 border-t-2 border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 flex-shrink-0">
-          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 flex-1">
-            {completionRate >= 80 ? (
-              <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0" />
-            ) : completionRate >= 50 ? (
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 flex-shrink-0" />
-            ) : (
-              <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 flex-shrink-0" />
+        <div className="p-3 sm:p-4 bg-gray-800 border-t-2 border-gray-700 flex flex-col gap-3 sm:gap-4 flex-shrink-0">
+          {/* Selector de formato de exportación */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+            <label className="text-xs sm:text-sm text-gray-300 font-semibold whitespace-nowrap">
+              {lang === 'ES' ? 'Formato de exportación:' : lang === 'EN' ? 'Export format:' : lang === 'DE' ? 'Exportformat:' : 'Format d\'exportation:'}
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setExportFormat('excel')}
+                className={`px-3 py-1.5 rounded text-xs sm:text-sm font-bold transition-colors ${
+                  exportFormat === 'excel'
+                    ? 'bg-blue-600 text-white border-2 border-blue-400'
+                    : 'bg-gray-700 text-gray-300 border-2 border-gray-600 hover:bg-gray-600'
+                }`}
+              >
+                Excel
+              </button>
+              <button
+                onClick={() => setExportFormat('legacy')}
+                className={`px-3 py-1.5 rounded text-xs sm:text-sm font-bold transition-colors flex items-center gap-1 ${
+                  exportFormat === 'legacy'
+                    ? 'bg-orange-600 text-white border-2 border-orange-400'
+                    : 'bg-gray-700 text-gray-300 border-2 border-gray-600 hover:bg-gray-600'
+                }`}
+              >
+                <FileText className="w-3 h-3" />
+                {lang === 'ES' ? 'ERP Legacy' : lang === 'EN' ? 'Legacy ERP' : lang === 'DE' ? 'Legacy ERP' : 'ERP Legacy'}
+              </button>
+            </div>
+            {exportFormat === 'legacy' && (
+              <select
+                value={legacyERPType}
+                onChange={(e) => setLegacyERPType(e.target.value as ERPType)}
+                className="bg-gray-700 text-white border-2 border-gray-600 rounded px-2 py-1.5 text-xs sm:text-sm font-bold focus:outline-none focus:border-orange-400"
+              >
+                <option value="a3">A3 Contabilidad</option>
+                <option value="sage">Sage</option>
+                <option value="contaplus">ContaPlus</option>
+              </select>
             )}
-            <span className="break-words">
-              {lang === 'ES' 
-                ? `Estado: ${completionRate >= 80 ? 'Listo para descargar' : completionRate >= 50 ? 'Revisar campos vacíos' : 'Muchos campos vacíos - considerar regenerar'}`
-                : lang === 'EN'
-                ? `Status: ${completionRate >= 80 ? 'Ready to download' : completionRate >= 50 ? 'Review empty fields' : 'Many empty fields - consider regenerating'}`
-                : lang === 'DE'
-                ? `Status: ${completionRate >= 80 ? 'Bereit zum Herunterladen' : completionRate >= 50 ? 'Leere Felder überprüfen' : 'Viele leere Felder - Regenerierung erwägen'}`
-                : `Statut: ${completionRate >= 80 ? 'Prêt à télécharger' : completionRate >= 50 ? 'Vérifier les champs vides' : 'Beaucoup de champs vides - envisager de régénérer'}`}
-            </span>
           </div>
-          <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
-            <button
-              onClick={onClose}
-              className="bg-gray-700 text-white border-2 border-gray-600 hover:bg-gray-600 transition-colors font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base flex-1 sm:flex-initial"
-            >
-              {lang === 'ES' ? 'CANCELAR' : lang === 'EN' ? 'CANCEL' : lang === 'DE' ? 'ABBRECHEN' : 'ANNULER'}
-            </button>
-            <button
-              onClick={handleDownload}
-              className="bg-green-600 text-white border-2 border-green-500 hover:bg-green-500 transition-colors font-bold py-2 px-3 sm:px-4 rounded flex items-center justify-center gap-2 text-sm sm:text-base flex-1 sm:flex-initial"
-            >
-              <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">{lang === 'ES' ? 'DESCARGAR EXCEL' : lang === 'EN' ? 'DOWNLOAD EXCEL' : lang === 'DE' ? 'EXCEL HERUNTERLADEN' : 'TÉLÉCHARGER EXCEL'}</span>
-              <span className="sm:hidden">{lang === 'ES' ? 'DESCARGAR' : lang === 'EN' ? 'DOWNLOAD' : lang === 'DE' ? 'HERUNTERLADEN' : 'TÉLÉCHARGER'}</span>
-            </button>
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400 flex-1">
+              {completionRate >= 80 ? (
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0" />
+              ) : completionRate >= 50 ? (
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 flex-shrink-0" />
+              ) : (
+                <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 flex-shrink-0" />
+              )}
+              <span className="break-words">
+                {lang === 'ES' 
+                  ? `Estado: ${completionRate >= 80 ? 'Listo para descargar' : completionRate >= 50 ? 'Revisar campos vacíos' : 'Muchos campos vacíos - considerar regenerar'}`
+                  : lang === 'EN'
+                  ? `Status: ${completionRate >= 80 ? 'Ready to download' : completionRate >= 50 ? 'Review empty fields' : 'Many empty fields - consider regenerating'}`
+                  : lang === 'DE'
+                  ? `Status: ${completionRate >= 80 ? 'Bereit zum Herunterladen' : completionRate >= 50 ? 'Leere Felder überprüfen' : 'Viele leere Felder - Regenerierung erwägen'}`
+                  : `Statut: ${completionRate >= 80 ? 'Prêt à télécharger' : completionRate >= 50 ? 'Vérifier les champs vides' : 'Beaucoup de champs vides - envisager de régénérer'}`}
+              </span>
+            </div>
+            <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
+              <button
+                onClick={onClose}
+                className="bg-gray-700 text-white border-2 border-gray-600 hover:bg-gray-600 transition-colors font-bold py-2 px-3 sm:px-4 rounded text-sm sm:text-base flex-1 sm:flex-initial"
+              >
+                {lang === 'ES' ? 'CANCELAR' : lang === 'EN' ? 'CANCEL' : lang === 'DE' ? 'ABBRECHEN' : 'ANNULER'}
+              </button>
+              <button
+                onClick={handleDownload}
+                className={`${
+                  exportFormat === 'legacy' 
+                    ? 'bg-orange-600 border-orange-500 hover:bg-orange-500' 
+                    : 'bg-green-600 border-green-500 hover:bg-green-500'
+                } text-white border-2 transition-colors font-bold py-2 px-3 sm:px-4 rounded flex items-center justify-center gap-2 text-sm sm:text-base flex-1 sm:flex-initial`}
+              >
+                <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden sm:inline">
+                  {exportFormat === 'legacy'
+                    ? (lang === 'ES' ? 'DESCARGAR TXT' : lang === 'EN' ? 'DOWNLOAD TXT' : lang === 'DE' ? 'TXT HERUNTERLADEN' : 'TÉLÉCHARGER TXT')
+                    : (lang === 'ES' ? 'DESCARGAR EXCEL' : lang === 'EN' ? 'DOWNLOAD EXCEL' : lang === 'DE' ? 'EXCEL HERUNTERLADEN' : 'TÉLÉCHARGER EXCEL')
+                  }
+                </span>
+                <span className="sm:hidden">{lang === 'ES' ? 'DESCARGAR' : lang === 'EN' ? 'DOWNLOAD' : lang === 'DE' ? 'HERUNTERLADEN' : 'TÉLÉCHARGER'}</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

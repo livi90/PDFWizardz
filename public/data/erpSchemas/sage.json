@@ -1,0 +1,76 @@
+{
+  "name": "Sage",
+  "version": "1.0",
+  "description": "Esquema de exportación para Sage Contabilidad",
+  "encoding": "windows-1252",
+  "lineEnding": "\r\n",
+  "columns": [
+    {
+      "name": "fecha",
+      "position": 0,
+      "width": 10,
+      "type": "date",
+      "format": "DD/MM/YYYY",
+      "padding": "none",
+      "align": "left",
+      "required": true,
+      "description": "Fecha del asiento (DD/MM/YYYY)"
+    },
+    {
+      "name": "cuenta",
+      "position": 1,
+      "width": 12,
+      "type": "string",
+      "padding": "space",
+      "align": "left",
+      "required": true,
+      "description": "Código de cuenta contable"
+    },
+    {
+      "name": "descripcion",
+      "position": 2,
+      "width": 40,
+      "type": "string",
+      "padding": "space",
+      "align": "left",
+      "required": false,
+      "description": "Descripción del movimiento"
+    },
+    {
+      "name": "debe",
+      "position": 3,
+      "width": 15,
+      "type": "numeric",
+      "format": "decimal",
+      "decimals": 2,
+      "padding": "zero",
+      "align": "right",
+      "required": false,
+      "description": "Importe al debe"
+    },
+    {
+      "name": "haber",
+      "position": 4,
+      "width": 15,
+      "type": "numeric",
+      "format": "decimal",
+      "decimals": 2,
+      "padding": "zero",
+      "align": "right",
+      "required": false,
+      "description": "Importe al haber"
+    },
+    {
+      "name": "numero_asiento",
+      "position": 5,
+      "width": 8,
+      "type": "numeric",
+      "padding": "zero",
+      "align": "right",
+      "required": true,
+      "description": "Número de asiento"
+    }
+  ],
+  "separator": ";",
+  "fixedWidth": false
+}
