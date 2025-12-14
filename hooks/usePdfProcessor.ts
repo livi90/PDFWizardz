@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FileItem, ProcessingStatus, Language, DocumentContext } from '../types';
-import { extractTextFromPdf } from '../services/pdfService';
+import { extractTextFromFile } from '../services/fileTextExtractor';
 import { analyzePdfContent } from '../services/geminiService';
 import { downloadResults } from '../services/exportService';
 
@@ -56,7 +56,7 @@ export const usePdfProcessor = () => {
       setFiles(prev => prev.map(f => f.id === currentItem.id ? { ...f, status: ProcessingStatus.PROCESSING } : f));
 
       try {
-        const text = await extractTextFromPdf(currentItem.file, 3, forceOCR);
+        const text = await extractTextFromFile(currentItem.file, 3, forceOCR);
         const aiResponse = await analyzePdfContent(text, currentItem.file.name, lang, context);
         
         setFiles(prev => prev.map(f => f.id === currentItem.id ? { 

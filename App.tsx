@@ -13,17 +13,21 @@ import ChatSession from './components/ChatSession';
 import PricingPage from './components/PricingPage';
 import LandingPage from './components/LandingPage';
 import TemplateEditor from './components/TemplateEditor';
+import MiniTemplateEditor from './components/MiniTemplateEditor';
+import ExcelReviewModal from './components/ExcelReviewModal';
 import ToolPage from './components/ToolPage';
 import AffiliateLanding from './components/AffiliateLanding';
 import { OcrSwitch } from './components/OcrSwitch';
 import BlogList from './components/BlogList';
 import BlogPost from './components/BlogPost';
+import CircularGemMenu from './components/CircularGemMenu';
 import { getPremiumStatus, getFeatureAccessStatus, consumeFreeTrialUse, getPlanLimits } from './services/gumroadService';
 import { usePdfProcessor } from './hooks/usePdfProcessor';
 import { mergePdfs, imagesToPdf, splitPdf, addWatermark, convertToText, convertToImages, convertToDocx, convertToExcel, convertToPptx } from './services/pdfTools';
 import { generateQuiz, generateFlashcards, generateMindMapData, analyzeInvoicesAndSuggestFields } from './services/geminiService';
 import { extractTextFromPdf } from './services/pdfService';
 import { fillExcelTemplate, getTemplateKeys, generateTemplateFromFields } from './services/excelTemplateService';
+import * as XLSX from 'xlsx';
 import { getTranslation } from './services/translations';
 import { ViewType, Language, DocumentContext, StudyMaterial, MindMapData } from './types';
 import { useSEO } from './hooks/useSEO';
@@ -126,6 +130,7 @@ const App: React.FC = () => {
       'LANDING_GENERADOR_TEST': '/generador-test',
       'LANDING_MODELO_TRIBUTARIO': '/modelo-tributario',
       'AFFILIATES': '/afiliados',
+      'BLOG': '/blog',
     };
     navigate(viewToRoute[view] || '/');
   };
@@ -190,6 +195,11 @@ const App: React.FC = () => {
   const [selectedSuggestedFields, setSelectedSuggestedFields] = useState<Set<string>>(new Set());
   const [useOcrExcel, setUseOcrExcel] = useState<boolean>(false); // OCR para Excel Templates
   const [renameFiles, setRenameFiles] = useState<boolean>(false); // Opción para renombrar archivos
+  const [normalizePercentages, setNormalizePercentages] = useState<boolean>(false); // Normalizar porcentajes (21% -> 0.21)
+  const [showMiniEditor, setShowMiniEditor] = useState<boolean>(false); // Mostrar mini editor
+  const [showReviewModal, setShowReviewModal] = useState<boolean>(false); // Mostrar modal de revisión
+  const [reviewData, setReviewData] = useState<Array<{pdfName: string; data: Record<string, any>}>>([]); // Datos para revisar
+  const [reviewWorkbook, setReviewWorkbook] = useState<any>(null); // Workbook generado para revisar (XLSX.WorkBook)
   const pdfTemplateInputRef = useRef<HTMLInputElement>(null);
   const excelTemplateInputRef = useRef<HTMLInputElement>(null);
   
@@ -361,15 +371,31 @@ const App: React.FC = () => {
         setIsScanningKeys(true);
         const keys = await getTemplateKeys(file);
         setDetectedKeys(keys);
+        
+        // Abrir mini editor automáticamente
+        setShowMiniEditor(true);
       } catch (error) {
         console.error('Error escaneando claves:', error);
         alert(lang === 'ES' 
           ? 'Error al escanear la plantilla. Continuando sin extracción dirigida...' 
           : 'Error scanning template. Continuing without targeted extraction...');
+        // Abrir editor de todas formas
+        setShowMiniEditor(true);
       } finally {
         setIsScanningKeys(false);
       }
     }
+  };
+
+  // Handler para cuando se guarda en el mini editor
+  const handleMiniEditorSave = (updatedFile: File) => {
+    setExcelTemplate(updatedFile);
+    // Re-escaneear las claves después de actualizar
+    getTemplateKeys(updatedFile).then(keys => {
+      setDetectedKeys(keys);
+    }).catch(error => {
+      console.error('Error re-escaneando claves:', error);
+    });
   };
 
   // Handler para analizar facturas y sugerir campos automáticamente
@@ -486,24 +512,21 @@ const App: React.FC = () => {
           }
           
           // Usar las claves detectadas para extracción dirigida
-          await fillExcelTemplate(
+          const result = await fillExcelTemplate(
             pdfsForTemplate, 
             excelTemplate, 
-            lang,
+            lang === 'ES' || lang === 'EN' ? lang : 'ES',
             (current, total) => setTemplateProgress({ current, total }),
             detectedKeys.length > 0 ? detectedKeys : undefined,
             useOcrExcel,
-            renameFiles // Pasar opción de renombrar archivos
+            renameFiles, // Pasar opción de renombrar archivos
+            normalizePercentages // Pasar opción de normalizar porcentajes
           );
           
-          alert(lang === 'ES' 
-            ? `¡${pdfsForTemplate.length} factura(s) procesada(s) exitosamente! Revisa tu descarga.` 
-            : `${pdfsForTemplate.length} invoice(s) processed successfully! Check your downloads.`);
-          
-          // Limpiar después de procesar
-          setPdfsForTemplate([]);
-          setExcelTemplate(null);
-          setDetectedKeys([]);
+          // Mostrar modal de revisión antes de descargar
+          setReviewData(result.extractedData);
+          setReviewWorkbook(result.workbook);
+          setShowReviewModal(true);
       } catch (e: any) {
           alert("Error: " + e.message);
       } finally {
@@ -516,66 +539,14 @@ const App: React.FC = () => {
 
   const renderHome = () => (
     <div className="flex flex-col items-center w-full animate-fade-in">
-      {/* Hero Section */}
-      <div className="w-full bg-gray-900 border-b-4 border-black mb-12 py-16 px-4 relative overflow-hidden">
-         <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/graphy.png')]"></div>
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-900 rounded-full blur-[100px] opacity-30"></div>
-         
-         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-8 relative z-10">
-            <div className="md:w-1/3 flex justify-center order-1">
-                {/* 
-                   PARA PONER TU PROPIA IMAGEN:
-                   1. Guarda tu imagen (ej: mago.png) en la misma carpeta que index.html
-                   2. Cambia el src de abajo así: src="./mago.png"
-                */}
-                <div className="w-58 h-58 bg-indigo-900 border-4 border-black rounded-full overflow-hidden relative shadow-[0_0_20px_rgba(99,102,241,0.6)] hover:scale-105 transition-transform duration-300">
-                   <img 
-                     src="/Images/cabeza mago.png" 
-                     alt="Gran Mago PDF" 
-                     className="w-full h-full object-cover p-2"
-                   />
-                </div>
-            </div>
-            <div className="md:w-2/3 text-center md:text-left order-2">
-                <div className="bg-indigo-900/50 inline-block px-2 py-1 border border-indigo-500 mb-4 text-indigo-300 font-bold text-sm tracking-widest shadow-[0_0_10px_rgba(99,102,241,0.3)]">
-                   ✨ {t.new}: WORD, EXCEL & QUIZZES
-                </div>
-                <h1 className="text-5xl md:text-7xl pixel-font-header text-gray-100 leading-tight mb-4 drop-shadow-md neon-glow-text">
-                   {t.heroTitle}<br/>
-                   <span className="text-indigo-400 bg-gray-900 px-2 border-4 border-gray-700 transform -skew-x-6 inline-block mt-2 shadow-[4px_4px_0_0_rgba(79,70,229,0.5)]">{t.heroSubtitle}</span>
-                </h1>
-                <p className="text-xl md:text-2xl text-gray-400 mb-4 max-w-lg">
-                   {t.heroDesc}
-                </p>
-                {/* SEO Content - Visible but subtle */}
-                <div className="text-sm text-gray-500 mb-6 max-w-lg">
-                  <p className="mb-2">
-                    <strong className="text-emerald-400">{t.heroPrivacy}</strong>
-                  </p>
-                  <p>
-                    <strong className="text-indigo-400">{t.heroAutomation}</strong>
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                   <button 
-                     onClick={() => navigate('/chat-pdf')}
-                     className="bg-indigo-600 text-white text-xl px-8 py-3 border-4 border-black retro-shadow hover:bg-indigo-500 hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all font-bold font-vt323"
-                   >
-                     {t.startBtn}
-                   </button>
-                   <button 
-                     onClick={() => document.getElementById('tools')?.scrollIntoView({ behavior: 'smooth'})}
-                     className="bg-gray-800 text-gray-200 text-xl px-8 py-3 border-4 border-black retro-shadow hover:bg-gray-700 hover:-translate-y-1 active:translate-y-0 active:shadow-none transition-all font-bold font-vt323"
-                   >
-                     {t.toolsBtn}
-                   </button>
-                </div>
-            </div>
-         </div>
-      </div>
+      {/* Menú Circular Pixel Art con Descripción */}
+      <CircularGemMenu 
+        lang={lang} 
+        onNavigate={(route) => navigate(route)}
+      />
 
       {/* Category Tabs in Header */}
-      <div className="w-full bg-gray-900 border-b-4 border-black sticky top-16 z-40 mb-6">
+      <div className="w-full sticky top-16 z-40 mb-6" style={{ background: '#050810', borderBottom: '4px solid #0a0e27' }}>
          <div className="max-w-6xl mx-auto px-4 py-3">
             <div className="flex flex-wrap gap-2 justify-center">
                <button
@@ -626,8 +597,8 @@ const App: React.FC = () => {
          </div>
 
       {/* SEO Landing Pages Section - B2B Specific Solutions */}
-      <div className="w-full bg-gradient-to-b from-gray-900 to-gray-800 border-b-4 border-black py-12 mb-8">
-         <div className="max-w-6xl mx-auto px-4">
+      <div className="w-full border-b-4 py-8 mb-6" style={{ background: '#050810', borderColor: '#0a0e27' }}>
+         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
             <div className="text-center mb-8">
                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 pixel-font-header">
                   {lang === 'ES' ? '🎯 Soluciones B2B Específicas' : lang === 'EN' ? '🎯 Specific B2B Solutions' : lang === 'DE' ? '🎯 Spezifische B2B-Lösungen' : '🎯 Solutions B2B Spécifiques'}
@@ -722,7 +693,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Feature Grid - Organized by Categories */}
-      <div id="tools" className="max-w-6xl mx-auto px-4 pb-20">
+      <div id="tools" className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pb-8 sm:pb-12" style={{ background: '#050810' }}>
          
          {/* CATEGORÍA: B2B Y EDUCACIÓN JUNTAS cuando es "all" - Priorizando B2B */}
          {activeCategory === 'all' ? (
@@ -976,7 +947,7 @@ const App: React.FC = () => {
          </div>
 
       {/* Google AdSense Placeholder - Reemplazar con código de AdSense después de aprobación */}
-      <div className="w-full max-w-4xl bg-gray-900 border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 mb-8 mx-auto font-mono text-sm tracking-widest min-h-[100px]">
+      <div className="w-full max-w-4xl bg-gray-900 border-2 border-dashed border-gray-700 flex items-center justify-center text-gray-600 mb-6 sm:mb-8 mx-auto font-mono text-xs sm:text-sm tracking-widest min-h-[80px] sm:min-h-[100px] px-3 sm:px-4">
          <div className="text-center p-4">
             <p className="mb-2">[{t.ads}]</p>
             <p className="text-xs text-gray-500">Anunciate aqui</p>
@@ -984,7 +955,7 @@ const App: React.FC = () => {
          {/* 
          INSTRUCCIONES PARA ADDSENSE:
          1. Una vez aprobado por AdSense, reemplaza este div con:
-         <div className="w-full max-w-4xl mb-8 mx-auto">
+         <div className="w-full max-w-4xl mb-6 sm:mb-8 mx-auto px-3 sm:px-4">
             <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-TU_ID_AQUI" crossOrigin="anonymous"></script>
             <ins className="adsbygoogle"
                  style={{display:"block"}}
@@ -1052,11 +1023,20 @@ const App: React.FC = () => {
             />
           </div>
 
-          <input type="file" multiple accept=".pdf" onChange={handleAiFileChange} className="hidden" ref={fileInputRef} />
+          <input type="file" multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.txt" onChange={handleAiFileChange} className="hidden" ref={fileInputRef} />
           {!hasFiles ? (
              <div onClick={() => !isProcessing && fileInputRef.current?.click()} className="border-4 border-dashed border-indigo-900 bg-indigo-900/20 p-12 cursor-pointer hover:bg-indigo-900/30 flex flex-col items-center gap-4 transition-colors">
                  <Upload className="w-16 h-16 text-indigo-500" />
                  <div className="text-2xl font-bold text-indigo-200">{t.dragDrop}</div>
+                 <p className="text-sm text-indigo-300 mt-2">
+                   {lang === 'ES' 
+                     ? 'Formatos soportados: PDF, Word (.docx, .doc), Excel (.xlsx, .xls), PowerPoint (.pptx), Texto (.txt)'
+                     : lang === 'EN'
+                     ? 'Supported formats: PDF, Word (.docx, .doc), Excel (.xlsx, .xls), PowerPoint (.pptx), Text (.txt)'
+                     : lang === 'DE'
+                     ? 'Unterstützte Formate: PDF, Word (.docx, .doc), Excel (.xlsx, .xls), PowerPoint (.pptx), Text (.txt)'
+                     : 'Formats pris en charge: PDF, Word (.docx, .doc), Excel (.xlsx, .xls), PowerPoint (.pptx), Texte (.txt)'}
+                 </p>
               </div>
           ) : (
             <div className="space-y-6">
@@ -1086,7 +1066,7 @@ const App: React.FC = () => {
 
   const renderSimpleTool = (title: string, desc: string, accept: string, actionLabel: string, onAction: () => void, color: 'green' | 'yellow' | 'red' | 'blue' | 'pink', extraControls?: React.ReactNode, maxFiles: number = 20) => {
     return (
-    <div className="max-w-3xl w-full mx-auto p-4 md:p-8">
+    <div className="max-w-3xl w-full mx-auto p-3 sm:p-4 md:p-6 lg:p-8">
         <div className="mb-6 flex items-center gap-2 text-gray-500 cursor-pointer hover:underline" onClick={() => setCurrentView('HOME')}>
             <ArrowRight className="transform rotate-180" /> {t.back}
         </div>
@@ -1311,7 +1291,41 @@ const App: React.FC = () => {
           <Route path="/plantillas-excel" element={(() => {
             const accessStatus = getFeatureAccessStatus('excel_template');
             return (
-            <div className="max-w-3xl w-full mx-auto p-4 md:p-8">
+              <>
+                {showMiniEditor && excelTemplate && (
+                  <MiniTemplateEditor
+                    excelFile={excelTemplate}
+                    lang={lang}
+                    onClose={() => setShowMiniEditor(false)}
+                    onSave={handleMiniEditorSave}
+                  />
+                )}
+                {showReviewModal && reviewWorkbook && reviewData.length > 0 && excelTemplate && (
+                  <ExcelReviewModal
+                    workbook={reviewWorkbook}
+                    extractedData={reviewData}
+                    excelTemplate={excelTemplate}
+                    pdfFiles={pdfsForTemplate}
+                    lang={lang}
+                    renameFiles={renameFiles}
+                    onClose={() => {
+                      setShowReviewModal(false);
+                      setReviewData([]);
+                      setReviewWorkbook(null);
+                    }}
+                    onDownload={() => {
+                      setPdfsForTemplate([]);
+                      setExcelTemplate(null);
+                      setDetectedKeys([]);
+                      setReviewData([]);
+                      setReviewWorkbook(null);
+                      alert(lang === 'ES' 
+                        ? `¡${pdfsForTemplate.length} factura(s) procesada(s) exitosamente! Revisa tu descarga.` 
+                        : `${pdfsForTemplate.length} invoice(s) processed successfully! Check your downloads.`);
+                    }}
+                  />
+                )}
+            <div className="max-w-3xl w-full mx-auto p-3 sm:p-4 md:p-6 lg:p-8">
                 <div className="mb-6 flex items-center gap-2 text-gray-500 cursor-pointer hover:underline" onClick={() => navigate('/')}>
                     <ArrowRight className="transform rotate-180" /> {t.back}
                 </div>
@@ -1370,7 +1384,7 @@ const App: React.FC = () => {
                     </div>
                 )}
 
-                <PixelCard title="PLANTILLA EXCEL INTELIGENTE" color="emerald" className="text-center">
+                <PixelCard title="PLANTILLA EXCEL INTELIGENTE" color="green" className="text-center">
                     <div className="space-y-6">
                         {/* OCR Switch */}
                         <div className="mb-4 flex justify-center">
@@ -1564,19 +1578,38 @@ const App: React.FC = () => {
                                 ref={excelTemplateInputRef}
                                 className="hidden"
                             />
-                            <div 
-                                onClick={() => excelTemplateInputRef.current?.click()} 
-                                className="border-4 border-dashed border-emerald-700 bg-emerald-900/20 p-8 cursor-pointer hover:bg-emerald-900/30 flex flex-col items-center gap-2"
-                            >
-                                <FileSpreadsheet className="w-12 h-12 text-emerald-400" />
-                                <div className="text-lg font-bold text-emerald-300">
-                                    {excelTemplate ? excelTemplate.name : 'SELECCIONAR PLANTILLA EXCEL'}
-                                </div>
-                                {isScanningKeys && (
-                                    <div className="text-sm text-emerald-400 flex items-center gap-2 mt-2">
-                                        <Sparkles className="w-4 h-4 animate-spin" />
-                                        {lang === 'ES' ? 'Escaneando Runas...' : 'Scanning Runes...'}
+                            <div className="space-y-3">
+                                <div 
+                                    onClick={() => excelTemplateInputRef.current?.click()} 
+                                    className="border-4 border-dashed border-emerald-700 bg-emerald-900/20 p-8 cursor-pointer hover:bg-emerald-900/30 flex flex-col items-center gap-2"
+                                >
+                                    <FileSpreadsheet className="w-12 h-12 text-emerald-400" />
+                                    <div className="text-lg font-bold text-emerald-300">
+                                        {excelTemplate ? excelTemplate.name : 'SELECCIONAR PLANTILLA EXCEL'}
                                     </div>
+                                    {isScanningKeys && (
+                                        <div className="text-sm text-emerald-400 flex items-center gap-2 mt-2">
+                                            <Sparkles className="w-4 h-4 animate-spin" />
+                                            {lang === 'ES' ? 'Escaneando Runas...' : 'Scanning Runes...'}
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Botón para abrir editor si ya hay una plantilla cargada */}
+                                {excelTemplate && !showMiniEditor && (
+                                    <button
+                                        onClick={() => setShowMiniEditor(true)}
+                                        className="w-full bg-purple-600 hover:bg-purple-500 text-white border-2 border-purple-500 font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Sparkles className="w-4 h-4" />
+                                        {lang === 'ES' 
+                                            ? '✏️ EDITAR PLANTILLA' 
+                                            : lang === 'EN'
+                                            ? '✏️ EDIT TEMPLATE'
+                                            : lang === 'DE'
+                                            ? '✏️ VORLAGE BEARBEITEN'
+                                            : '✏️ ÉDITER LE MODÈLE'}
+                                    </button>
                                 )}
                             </div>
                             
@@ -1693,34 +1726,66 @@ const App: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Opción de renombrar archivos */}
+                        {/* Opciones adicionales */}
                         {pdfsForTemplate.length > 0 && excelTemplate && (
-                            <div className="bg-indigo-900/30 border-2 border-indigo-600 rounded-lg p-4">
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={renameFiles}
-                                        onChange={(e) => setRenameFiles(e.target.checked)}
-                                        className="w-5 h-5 text-indigo-600 border-gray-600 rounded focus:ring-indigo-500"
-                                    />
-                                    <div>
-                                        <div className="text-indigo-200 font-bold text-lg">
-                                            {lang === 'ES' ? '📝 Renombrar archivos PDF automáticamente' : 
-                                             lang === 'EN' ? '📝 Automatically rename PDF files' :
-                                             lang === 'DE' ? '📝 PDF-Dateien automatisch umbenennen' :
-                                             '📝 Renommer automatiquement les fichiers PDF'}
+                            <div className="space-y-3">
+                                {/* Opción de normalizar porcentajes */}
+                                <div className="bg-yellow-900/30 border-2 border-yellow-600 rounded-lg p-4">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={normalizePercentages}
+                                            onChange={(e) => setNormalizePercentages(e.target.checked)}
+                                            className="w-5 h-5 text-yellow-600 border-gray-600 rounded focus:ring-yellow-500"
+                                        />
+                                        <div>
+                                            <div className="text-yellow-200 font-bold text-lg">
+                                                {lang === 'ES' ? '🔢 Normalizar porcentajes (21% → 0,21)' : 
+                                                 lang === 'EN' ? '🔢 Normalize percentages (21% → 0.21)' :
+                                                 lang === 'DE' ? '🔢 Prozentsätze normalisieren (21% → 0,21)' :
+                                                 '🔢 Normaliser les pourcentages (21% → 0,21)'}
+                                            </div>
+                                            <div className="text-yellow-300 text-sm mt-1">
+                                                {lang === 'ES' 
+                                                    ? 'Convierte porcentajes a decimales para que las fórmulas de Excel funcionen correctamente. Ejemplo: 21% se convierte en 0,21'
+                                                    : lang === 'EN'
+                                                    ? 'Converts percentages to decimals so Excel formulas work correctly. Example: 21% becomes 0.21'
+                                                    : lang === 'DE'
+                                                    ? 'Wandelt Prozentsätze in Dezimalzahlen um, damit Excel-Formeln korrekt funktionieren. Beispiel: 21% wird zu 0,21'
+                                                    : 'Convertit les pourcentages en décimales pour que les formules Excel fonctionnent correctement. Exemple: 21% devient 0,21'}
+                                            </div>
                                         </div>
-                                        <div className="text-indigo-300 text-sm mt-1">
-                                            {lang === 'ES' 
-                                                ? 'Los archivos se renombrarán usando: Fecha_Empresa_Numero.pdf y se descargarán en un ZIP junto con el Excel.'
-                                                : lang === 'EN'
-                                                ? 'Files will be renamed using: Date_Company_Number.pdf and downloaded in a ZIP along with the Excel.'
-                                                : lang === 'DE'
-                                                ? 'Dateien werden umbenannt mit: Datum_Unternehmen_Nummer.pdf und in einem ZIP zusammen mit dem Excel heruntergeladen.'
-                                                : 'Les fichiers seront renommés en utilisant: Date_Entreprise_Numero.pdf et téléchargés dans un ZIP avec l\'Excel.'}
+                                    </label>
+                                </div>
+
+                                {/* Opción de renombrar archivos */}
+                                <div className="bg-indigo-900/30 border-2 border-indigo-600 rounded-lg p-4">
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={renameFiles}
+                                            onChange={(e) => setRenameFiles(e.target.checked)}
+                                            className="w-5 h-5 text-indigo-600 border-gray-600 rounded focus:ring-indigo-500"
+                                        />
+                                        <div>
+                                            <div className="text-indigo-200 font-bold text-lg">
+                                                {lang === 'ES' ? '📝 Renombrar archivos PDF automáticamente' : 
+                                                 lang === 'EN' ? '📝 Automatically rename PDF files' :
+                                                 lang === 'DE' ? '📝 PDF-Dateien automatisch umbenennen' :
+                                                 '📝 Renommer automatiquement les fichiers PDF'}
+                                            </div>
+                                            <div className="text-indigo-300 text-sm mt-1">
+                                                {lang === 'ES' 
+                                                    ? 'Los archivos se renombrarán usando: Fecha_Empresa_Numero.pdf y se descargarán en un ZIP junto con el Excel.'
+                                                    : lang === 'EN'
+                                                    ? 'Files will be renamed using: Date_Company_Number.pdf and downloaded in a ZIP along with the Excel.'
+                                                    : lang === 'DE'
+                                                    ? 'Dateien werden umbenannt mit: Datum_Unternehmen_Nummer.pdf und in einem ZIP zusammen mit dem Excel heruntergeladen.'
+                                                    : 'Les fichiers seront renommés en utilisant: Date_Entreprise_Numero.pdf et téléchargés dans un ZIP avec l\'Excel.'}
+                                            </div>
                                         </div>
-                                    </div>
-                                </label>
+                                    </label>
+                                </div>
                             </div>
                         )}
 
@@ -1766,12 +1831,13 @@ const App: React.FC = () => {
                     </div>
                 </PixelCard>
             </div>
+              </>
             );
-         })()} />
+          })()} />
 
           <Route path="/generar-test" element={(
              studyMaterial ? (
-                 <div className="max-w-4xl mx-auto p-8">
+                 <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
                      <StudySession 
                         material={studyMaterial} 
                         t={t} 

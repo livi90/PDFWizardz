@@ -33,6 +33,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
   const [currentSheetIndex, setCurrentSheetIndex] = useState<number>(0);
   const [zoom, setZoom] = useState<number>(100);
   const [showRunesList, setShowRunesList] = useState<boolean>(false);
+  const [isCellSelectorMode, setIsCellSelectorMode] = useState<boolean>(false); // Modo selector de celdas
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +77,9 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
       setCurrentSheetIndex(0);
       loadWorksheet(wb, firstSheetName);
       setExcelFile(file);
+      
+      // Activar modo selector automáticamente al cargar una plantilla
+      setIsCellSelectorMode(true);
     } catch (error) {
       alert(lang === 'ES' 
         ? 'Error al cargar el archivo Excel: ' + (error instanceof Error ? error.message : 'Error desconocido')
@@ -256,6 +260,39 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
     // Si es una runa personalizada nueva, agregarla a la lista
     if (!commonRunes.includes(runeName) && !customRunes.includes(runeName)) {
       setCustomRunes([...customRunes, runeName]);
+    }
+  };
+
+  // Toggle automático de {{}} en modo selector
+  const toggleCellMarker = (row: number, col: number) => {
+    if (!worksheet || !workbook) return;
+    
+    const cell = cells[row]?.[col];
+    if (!cell) return;
+    
+    const currentValue = cell.value;
+    const hasMarker = currentValue.includes('{{') && currentValue.includes('}}');
+    
+    if (hasMarker) {
+      // Remover marcadores existentes
+      const cleanedValue = currentValue.replace(/\{\{([^}]+)\}\}/g, '$1').trim();
+      updateCell(row, col, cleanedValue);
+    } else {
+      // Agregar marcadores si la celda tiene contenido
+      if (currentValue.trim()) {
+        // Si el contenido ya parece ser un nombre de variable (mayúsculas, sin espacios), usarlo directamente
+        const cleanValue = currentValue.trim().toUpperCase().replace(/\s+/g, '_');
+        const runeText = `{{${cleanValue}}}`;
+        updateCell(row, col, runeText);
+        
+        // Agregar a runas personalizadas si no existe
+        if (!commonRunes.includes(cleanValue) && !customRunes.includes(cleanValue)) {
+          setCustomRunes([...customRunes, cleanValue]);
+        }
+      } else {
+        // Si está vacía, permitir edición
+        startEditing(row, col);
+      }
     }
   };
 
@@ -745,6 +782,28 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
                       <List className="w-4 h-4" />
                       {getAllUsedRunes().length} {lang === 'ES' ? 'runas' : lang === 'EN' ? 'runes' : lang === 'DE' ? 'Runen' : 'runes'}
                     </button>
+
+                    {/* Toggle modo selector de celdas */}
+                    <button
+                      onClick={() => setIsCellSelectorMode(!isCellSelectorMode)}
+                      className={`border-2 font-bold py-2 px-4 flex items-center gap-2 text-sm transition-colors ${
+                        isCellSelectorMode
+                          ? 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500'
+                          : 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
+                      }`}
+                      title={lang === 'ES' 
+                        ? 'Modo selector: Clic en celdas para agregar/quitar {{}}'
+                        : lang === 'EN'
+                        ? 'Selector mode: Click cells to add/remove {{}}'
+                        : lang === 'DE'
+                        ? 'Auswahlmodus: Klicken Sie auf Zellen, um {{}} hinzuzufügen/entfernen'
+                        : 'Mode sélecteur: Cliquez sur les cellules pour ajouter/retirer {{}}'}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      {isCellSelectorMode 
+                        ? (lang === 'ES' ? 'Selector ON' : lang === 'EN' ? 'Selector ON' : lang === 'DE' ? 'Auswahl AN' : 'Sélecteur ON')
+                        : (lang === 'ES' ? 'Selector OFF' : lang === 'EN' ? 'Selector OFF' : lang === 'DE' ? 'Auswahl AUS' : 'Sélecteur OFF')}
+                    </button>
                   </div>
 
                   <button
@@ -812,7 +871,15 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
                             return (
                               <td
                                 key={colIndex}
-                                onClick={() => !isEditing && setSelectedCell({ row: rowIndex, col: colIndex })}
+                                onClick={() => {
+                                  if (!isEditing) {
+                                    if (isCellSelectorMode) {
+                                      // En modo selector, toggle automático de {{}}
+                                      toggleCellMarker(rowIndex, colIndex);
+                                    }
+                                    setSelectedCell({ row: rowIndex, col: colIndex });
+                                  }
+                                }}
                                 onDoubleClick={() => startEditing(rowIndex, colIndex)}
                                 className={`border border-gray-600 p-2 cursor-pointer min-w-[120px] relative ${
                                   isSelected && !isEditing
@@ -826,7 +893,12 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
                                   hasRune && !isSelected
                                     ? 'text-emerald-400 font-bold border-emerald-500 border-2'
                                     : ''
+                                } ${
+                                  isCellSelectorMode && !hasRune && !isEditing
+                                    ? 'hover:bg-emerald-900/30 hover:border-emerald-400'
+                                    : ''
                                 }`}
+                                title={isCellSelectorMode && !hasRune ? (lang === 'ES' ? 'Clic para agregar {{}}' : lang === 'EN' ? 'Click to add {{}}' : lang === 'DE' ? 'Klicken zum Hinzufügen von {{}}' : 'Cliquer pour ajouter {{}}') : ''}
                               >
                                 {isEditing ? (
                                   <input
@@ -958,6 +1030,22 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({ lang, onGoToHome }) => 
                         : lang === 'DE'
                         ? '💡 Enter drücken zum Speichern oder Esc zum Abbrechen'
                         : '💡 Appuyez sur Entrée pour enregistrer ou Esc pour annuler'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Indicador de modo selector */}
+                {isCellSelectorMode && !editingCell && (
+                  <div className="mt-4 p-3 bg-emerald-900/50 border-2 border-emerald-500 rounded">
+                    <p className="text-emerald-200 text-sm font-bold flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      {lang === 'ES' 
+                        ? '✨ Modo Selector ACTIVO: Haz clic en las celdas para agregar/quitar marcadores {{}} automáticamente'
+                        : lang === 'EN'
+                        ? '✨ Selector Mode ACTIVE: Click cells to automatically add/remove {{}} markers'
+                        : lang === 'DE'
+                        ? '✨ Auswahlmodus AKTIV: Klicken Sie auf Zellen, um {{}}-Markierungen automatisch hinzuzufügen/entfernen'
+                        : '✨ Mode Sélecteur ACTIF: Cliquez sur les cellules pour ajouter/retirer automatiquement les marqueurs {{}}'}
                     </p>
                   </div>
                 )}

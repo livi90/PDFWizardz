@@ -125,8 +125,9 @@ export const fillExcelTemplate = async (
   onProgress?: (current: number, total: number) => void,
   targetKeys?: string[], // Claves específicas a buscar (extracción dirigida)
   forceOCR: boolean = false, // Forzar OCR para PDFs escaneados
-  renameFiles: boolean = false // Renombrar archivos basándose en datos extraídos
-): Promise<void> => {
+  renameFiles: boolean = false, // Renombrar archivos basándose en datos extraídos
+  normalizePercentages: boolean = false // Normalizar porcentajes (21% -> 0.21)
+): Promise<{ workbook: XLSX.WorkBook; extractedData: Array<{pdfName: string; data: Record<string, any>}> }> => {
   try {
     if (pdfFiles.length === 0) {
       throw new Error('No se proporcionaron archivos PDF');
@@ -174,6 +175,7 @@ export const fillExcelTemplate = async (
     
     // 2. Procesar cada PDF y agregarlo como fila
     const renamedFiles: Array<{ originalName: string; newName: string; file: File }> = [];
+    const allExtractedData: Array<{pdfName: string; data: Record<string, any>}> = [];
     
     for (let pdfIndex = 0; pdfIndex < pdfFiles.length; pdfIndex++) {
       const pdfFile = pdfFiles[pdfIndex];
@@ -188,15 +190,14 @@ export const fillExcelTemplate = async (
       // 2.2. Extraer datos estructurados usando Gemini (con claves dirigidas si se proporcionan)
       const extractedData = await extractStructuredData(pdfText, lang, targetKeys);
       
+      // Guardar datos extraídos para revisión
+      allExtractedData.push({
+        pdfName: pdfFile.name,
+        data: extractedData
+      });
+      
       // 2.2.5. Generar nombre de archivo si está habilitado el renombrado
-      if (renameFiles) {
-        const newFileName = generateFileNameFromData(extractedData, pdfFile.name, lang);
-        renamedFiles.push({
-          originalName: pdfFile.name,
-          newName: newFileName,
-          file: pdfFile
-        });
-      }
+      // (Se hará después de la revisión si el usuario confirma)
       
       // 2.3. Procesar todas las hojas del workbook
       workbook.SheetNames.forEach(sheetName => {
@@ -210,34 +211,66 @@ export const fillExcelTemplate = async (
           return;
         }
         
+        // MEJORA 2: Colocar datos de forma continua, saltando solo celdas ocupadas individualmente
         // Usar la fila correspondiente al índice del PDF (o la primera si hay más PDFs que filas)
         const sourceRowIndex = Math.min(pdfIndex, templateRows.length - 1);
         const sourceRow = templateRows[sourceRowIndex];
         
-        // La fila destino es la misma que la fuente (ya están duplicadas si era necesario)
-        const targetRow = sourceRow;
+        // Para la primera factura, empezar justo debajo de la fila plantilla
+        // Para facturas siguientes, encontrar dónde terminó la anterior
+        let startDataRow = sourceRow + 1;
         
-        // Rellenar la fila con los datos extraídos
-        copyAndFillRow(worksheet, sourceRow, targetRow, extractedData);
+        if (pdfIndex > 0) {
+          // Encontrar la última fila donde se colocaron datos en la factura anterior
+          // Buscar en todas las columnas para encontrar la fila más baja con datos
+          startDataRow = findLastDataRowForPreviousInvoice(worksheet, sourceRow, pdfIndex) + 1;
+        }
+        
+        // Rellenar la fila con los datos extraídos (cada columna busca su propia celda vacía)
+        copyAndFillRowContinuous(worksheet, sourceRow, startDataRow, extractedData, normalizePercentages);
         
         // Actualizar el rango del worksheet
         const currentRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+        const lastDataRow = findLastDataRowForPreviousInvoice(worksheet, sourceRow, pdfIndex + 1);
         const newRange = {
           s: { r: 0, c: 0 },
-          e: { r: Math.max(currentRange.e.r, targetRow), c: currentRange.e.c }
+          e: { r: Math.max(currentRange.e.r, lastDataRow), c: currentRange.e.c }
         };
         worksheet['!ref'] = XLSX.utils.encode_range(newRange);
       });
     }
     
-    // 3. Generar el archivo Excel relleno
+    // 3. Retornar workbook y datos extraídos para revisión (no descargar aún)
+    return {
+      workbook,
+      extractedData: allExtractedData
+    };
+    
+  } catch (error) {
+    console.error('Error procesando plantilla Excel:', error);
+    throw new Error(`Error al procesar la plantilla: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+  }
+};
+
+/**
+ * Descarga el workbook como archivo Excel
+ */
+export const downloadExcelWorkbook = (
+  workbook: XLSX.WorkBook,
+  excelTemplate: File,
+  pdfFilesCount: number,
+  renameFiles: boolean = false,
+  renamedFiles: Array<{ originalName: string; newName: string; file: File }> = []
+): void => {
+  try {
+    // Generar el archivo Excel
     const excelBuffer = XLSX.write(workbook, {
       type: 'array',
       bookType: 'xlsx',
       cellStyles: true
     });
     
-    // 4. Descargar el archivo
+    // Crear blob
     const blob = new Blob([excelBuffer], { 
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
     });
@@ -247,9 +280,9 @@ export const fillExcelTemplate = async (
     // Remover cualquier extensión existente (.xlsx, .xls, .xlsxx, etc.)
     outputFileName = outputFileName.replace(/\.(xlsx|xls|xlss?x?)$/i, '');
     // Agregar el sufijo y la extensión correcta
-    outputFileName = `${outputFileName}_relleno_${pdfFiles.length}_facturas.xlsx`;
+    outputFileName = `${outputFileName}_relleno_${pdfFilesCount}_facturas.xlsx`;
     
-    // 4.5. Si está habilitado el renombrado, crear ZIP con archivos renombrados
+    // Si está habilitado el renombrado, crear ZIP con archivos renombrados
     if (renameFiles && renamedFiles.length > 0) {
       const zip = new JSZip();
       
@@ -262,16 +295,16 @@ export const fillExcelTemplate = async (
       }
       
       // Generar y descargar ZIP
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      saveAs(zipBlob, `facturas_procesadas_${Date.now()}.zip`);
+      zip.generateAsync({ type: 'blob' }).then(zipBlob => {
+        saveAs(zipBlob, `facturas_procesadas_${Date.now()}.zip`);
+      });
     } else {
       // Solo descargar Excel
       saveAs(blob, outputFileName);
     }
-    
   } catch (error) {
-    console.error('Error procesando plantilla Excel:', error);
-    throw new Error(`Error al procesar la plantilla: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    console.error('Error descargando Excel:', error);
+    throw new Error(`Error al descargar el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
   }
 };
 
@@ -279,7 +312,7 @@ export const fillExcelTemplate = async (
  * Genera un nombre de archivo basado en los datos extraídos
  * Formato: YYYY-MM-DD_Empresa_Numero.pdf
  */
-function generateFileNameFromData(data: Record<string, any>, originalName: string, lang: 'ES' | 'EN' = 'ES'): string {
+export function generateFileNameFromData(data: Record<string, any>, originalName: string, lang: 'ES' | 'EN' = 'ES'): string {
   // Extraer componentes
   let fecha = data.fecha || data.date || '';
   let empresa = data.empresa || data.company || data.proveedor || data.supplier || '';
@@ -418,7 +451,282 @@ function findAllTemplateRows(worksheet: XLSX.WorkSheet): number[] {
 }
 
 /**
- * Copia una fila plantilla y la rellena con datos extraídos
+ * Normaliza valores para Excel (números, fechas, porcentajes, etc.)
+ * Convierte números con punto decimal a formato con coma para Excel en español
+ * Normaliza fechas a formato estándar
+ * Normaliza porcentajes si está habilitado (21% -> 0.21)
+ */
+export function normalizeValueForExcel(
+  value: any,
+  markerName: string,
+  normalizePercentages: boolean = false
+): XLSX.CellObject {
+  // Si el valor es null o undefined, retornar celda vacía
+  if (value === null || value === undefined) {
+    return {
+      v: '',
+      t: 's',
+      w: ''
+    };
+  }
+
+  // Convertir a string para análisis
+  let valueStr = String(value).trim();
+  
+  // MEJORA: Normalizar porcentajes si está habilitado
+  if (normalizePercentages) {
+    // Detectar porcentajes (21%, 21 %, etc.)
+    const percentagePattern = /^(\d+([.,]\d+)?)\s*%$/;
+    const percentageMatch = valueStr.match(percentagePattern);
+    if (percentageMatch) {
+      // Convertir porcentaje a decimal (21% -> 0.21)
+      const percentageValue = parseFloat(percentageMatch[1].replace(',', '.'));
+      if (!isNaN(percentageValue)) {
+        const decimalValue = percentageValue / 100;
+        valueStr = String(decimalValue);
+        // Continuar procesamiento como número
+      }
+    }
+  }
+  
+  // Detectar si es un número (incluyendo decimales con punto o coma)
+  // También detectar números con separadores de miles (1.234,56 o 1,234.56)
+  const numberPattern = /^-?\d{1,3}([.,]\d{3})*([.,]\d+)?$|^-?\d+([.,]\d+)?$/;
+  const isNumber = numberPattern.test(valueStr.replace(/\s/g, '')); // Eliminar espacios
+  
+  // Detectar si es una fecha (varios formatos comunes)
+  const datePatterns = [
+    /^\d{4}-\d{2}-\d{2}$/, // YYYY-MM-DD
+    /^\d{2}\/\d{2}\/\d{4}$/, // DD/MM/YYYY
+    /^\d{2}-\d{2}-\d{4}$/, // DD-MM-YYYY
+    /^\d{4}\/\d{2}\/\d{2}$/, // YYYY/MM/DD
+    /^\d{1,2}\/\d{1,2}\/\d{4}$/, // D/M/YYYY o DD/MM/YYYY
+    /^\d{1,2}-\d{1,2}-\d{4}$/, // D-M-YYYY o DD-MM-YYYY
+  ];
+  
+  const isDate = datePatterns.some(pattern => pattern.test(valueStr));
+  
+  // Si es un número, normalizar decimales (punto -> coma) y convertir a número
+  if (isNumber) {
+    // Limpiar el string (eliminar espacios y caracteres no numéricos excepto punto y coma)
+    const cleanValue = valueStr.replace(/\s/g, '').replace(/[^\d.,-]/g, '');
+    
+    // Detectar si tiene separador de miles (punto) y decimales (coma) -> formato europeo: 1.234,56
+    // O si tiene separador de miles (coma) y decimales (punto) -> formato americano: 1,234.56
+    const hasThousandsSeparator = /^\d{1,3}([.,]\d{3})+([.,]\d+)?$/.test(cleanValue);
+    
+    let numberValue: number;
+    let normalizedNumberStr: string;
+    
+    if (hasThousandsSeparator) {
+      // Tiene separador de miles, necesitamos determinar cuál es cuál
+      const lastComma = cleanValue.lastIndexOf(',');
+      const lastDot = cleanValue.lastIndexOf('.');
+      
+      if (lastComma > lastDot) {
+        // Formato europeo: 1.234,56 (punto = miles, coma = decimales)
+        normalizedNumberStr = cleanValue; // Ya está en formato correcto
+        numberValue = parseFloat(cleanValue.replace(/\./g, '').replace(',', '.'));
+      } else {
+        // Formato americano: 1,234.56 (coma = miles, punto = decimales)
+        normalizedNumberStr = cleanValue.replace(/,/g, '').replace('.', ','); // Convertir a formato español
+        numberValue = parseFloat(cleanValue.replace(/,/g, ''));
+      }
+      } else {
+        // No tiene separador de miles, solo decimales
+        // Si tiene punto, asumir que es decimal (formato inglés/estándar) -> convertir a número
+        if (cleanValue.includes('.')) {
+          numberValue = parseFloat(cleanValue);
+          // Para display, convertir a formato español (coma)
+          normalizedNumberStr = cleanValue.replace('.', ',');
+        } else if (cleanValue.includes(',')) {
+          // Ya tiene coma (formato español) -> convertir a número reemplazando coma por punto
+          numberValue = parseFloat(cleanValue.replace(',', '.'));
+          normalizedNumberStr = cleanValue; // Mantener formato español
+        } else {
+          // Entero sin decimales
+          numberValue = parseFloat(cleanValue);
+          normalizedNumberStr = cleanValue;
+        }
+      }
+      
+      // Si es un número válido, retornar como número
+      if (!isNaN(numberValue)) {
+        // IMPORTANTE: Excel internamente siempre usa punto para números en el campo 'v'
+        // Esto es crítico para que las fórmulas funcionen correctamente
+        // El campo 'w' (display) puede tener coma, pero Excel lo regenerará según formato de celda
+        // Guardamos el número real en 'v' (con punto interno) para compatibilidad con fórmulas
+        return {
+          v: numberValue, // Valor numérico real (Excel internamente usa punto, fórmulas funcionarán)
+          t: 'n', // Tipo numérico (CRÍTICO: permite que las fórmulas funcionen)
+          w: normalizedNumberStr // Display con formato español (coma), pero Excel puede regenerarlo
+        };
+      }
+  }
+  
+  // Si es una fecha, normalizar a formato estándar
+  if (isDate) {
+    try {
+      // Intentar parsear la fecha
+      let date: Date | null = null;
+      
+      // Probar diferentes formatos
+      if (valueStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // YYYY-MM-DD
+        date = new Date(valueStr);
+      } else if (valueStr.match(/^\d{2}\/\d{2}\/\d{4}$/) || valueStr.match(/^\d{2}-\d{2}-\d{4}$/)) {
+        // DD/MM/YYYY o DD-MM-YYYY
+        const parts = valueStr.split(/[\/\-]/);
+        date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      } else if (valueStr.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+        // YYYY/MM/DD
+        const parts = valueStr.split('/');
+        date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      } else if (valueStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/) || valueStr.match(/^\d{1,2}-\d{1,2}-\d{4}$/)) {
+        // D/M/YYYY o D-M-YYYY
+        const parts = valueStr.split(/[\/\-]/);
+        date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      }
+      
+      if (date && !isNaN(date.getTime())) {
+        // Excel usa números de serie para fechas (días desde 1900-01-01)
+        // Pero podemos guardarlo como string formateado o como número de serie
+        // Por simplicidad, guardamos como string formateado en formato estándar
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+        
+        return {
+          v: formattedDate,
+          t: 's', // Tipo string (Excel puede convertirlo a fecha si tiene formato de celda)
+          w: formattedDate
+        };
+      }
+    } catch (e) {
+      // Si falla el parseo de fecha, continuar como texto
+    }
+  }
+  
+  // Si no es número ni fecha, retornar como texto
+  return {
+    v: valueStr,
+    t: 's',
+    w: valueStr
+  };
+}
+
+/**
+ * Copia una fila plantilla y la rellena con datos extraídos de forma continua
+ * MEJORA: Preserva los marcadores {{}} originales y coloca los datos en celdas vacías consecutivas
+ * Cada columna busca su propia celda vacía, saltando solo las ocupadas individualmente
+ */
+function copyAndFillRowContinuous(
+  worksheet: XLSX.WorkSheet,
+  sourceRow: number,
+  startDataRow: number,
+  extractedData: Record<string, any>,
+  normalizePercentages: boolean = false
+): void {
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+  const markerRegex = /\{\{([^}]+)\}\}/g;
+  
+  // Rastrear la fila actual para cada columna (empezar todas desde startDataRow)
+  const columnCurrentRows: Map<number, number> = new Map();
+  
+  // Copiar cada celda de la fila plantilla
+  for (let col = range.s.c; col <= range.e.c; col++) {
+    const sourceCellAddress = XLSX.utils.encode_cell({ r: sourceRow, c: col });
+    const sourceCell = worksheet[sourceCellAddress];
+    
+    if (sourceCell) {
+      // Preservar la celda original con el marcador (no modificar)
+      const targetCellAddress = XLSX.utils.encode_cell({ r: sourceRow, c: col });
+      const newCell: XLSX.CellObject = {
+        ...sourceCell,
+        v: sourceCell.v,
+        t: sourceCell.t,
+        f: sourceCell.f,
+        s: sourceCell.s ? { ...sourceCell.s } : undefined
+      };
+      worksheet[targetCellAddress] = newCell;
+      
+      // Si la celda tiene marcadores, buscar valor y colocarlo en celda vacía
+      if (newCell.v && typeof newCell.v === 'string') {
+        const cellValue = String(newCell.v);
+        const markers = [];
+        let match;
+        
+        // Resetear regex para esta celda
+        markerRegex.lastIndex = 0;
+        
+        // Encontrar todos los marcadores en la celda
+        while ((match = markerRegex.exec(cellValue)) !== null) {
+          const markerName = match[1].trim().toUpperCase();
+          const normalizedMarker = markerName.replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '');
+          const value = findValueInData(extractedData, normalizedMarker);
+          
+          if (value !== null && value !== undefined) {
+            markers.push({ markerName, value, originalMatch: match[0] });
+          }
+        }
+        
+        // Si hay marcadores, colocar el valor en la siguiente celda vacía de esta columna
+        if (markers.length > 0) {
+          const valueToPlace = markers[0].value;
+          const markerName = markers[0].markerName;
+          
+          // Obtener la fila actual para esta columna (o empezar desde startDataRow)
+          let currentRowForCol = columnCurrentRows.get(col) || startDataRow;
+          
+          // Buscar la siguiente celda vacía en esta columna específica
+          let foundEmpty = false;
+          const maxSearchRows = 100; // Limitar búsqueda
+          
+          for (let i = 0; i < maxSearchRows; i++) {
+            const checkRow = currentRowForCol + i;
+            const checkAddress = XLSX.utils.encode_cell({ r: checkRow, c: col });
+            const checkCell = worksheet[checkAddress];
+            
+            // Celda está vacía si no existe, o tiene valor vacío/cero y no tiene fórmula
+            const isEmpty = !checkCell || (
+              (checkCell.v === '' || checkCell.v === 0 || checkCell.v === '0' || checkCell.v === null || checkCell.v === undefined) &&
+              !checkCell.f
+            );
+            
+            if (isEmpty) {
+              // Normalizar el valor antes de colocarlo (números, fechas, etc.)
+              const normalizedValue = normalizeValueForExcel(valueToPlace, markerName);
+              
+              // Colocar el valor aquí
+              worksheet[checkAddress] = normalizedValue;
+              
+              // Actualizar la fila actual para esta columna (siguiente fila para el próximo dato)
+              columnCurrentRows.set(col, checkRow + 1);
+              foundEmpty = true;
+              break;
+            }
+          }
+          
+          if (!foundEmpty) {
+            // Si no se encuentra celda vacía, colocar en la siguiente disponible
+            const fallbackRow = currentRowForCol + maxSearchRows;
+            const fallbackAddress = XLSX.utils.encode_cell({ r: fallbackRow, c: col });
+            
+            // Normalizar el valor antes de colocarlo
+            const normalizedValue = normalizeValueForExcel(valueToPlace, markerName, normalizePercentages);
+            worksheet[fallbackAddress] = normalizedValue;
+            
+            columnCurrentRows.set(col, fallbackRow + 1);
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Función legacy para compatibilidad (ya no se usa pero la mantenemos por si acaso)
  */
 function copyAndFillRow(
   worksheet: XLSX.WorkSheet,
@@ -426,51 +734,7 @@ function copyAndFillRow(
   targetRow: number,
   extractedData: Record<string, any>
 ): void {
-  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-  const markerRegex = /\{\{([^}]+)\}\}/g;
-  
-  // Copiar cada celda de la fila plantilla
-  for (let col = range.s.c; col <= range.e.c; col++) {
-    const sourceCellAddress = XLSX.utils.encode_cell({ r: sourceRow, c: col });
-    const targetCellAddress = XLSX.utils.encode_cell({ r: targetRow, c: col });
-    const sourceCell = worksheet[sourceCellAddress];
-    
-    if (sourceCell) {
-      // Crear una copia profunda de la celda
-      const newCell: XLSX.CellObject = {
-        ...sourceCell,
-        v: sourceCell.v,
-        t: sourceCell.t,
-        f: sourceCell.f ? adjustFormulaRow(sourceCell.f, sourceRow, targetRow) : undefined,
-        s: sourceCell.s ? { ...sourceCell.s } : undefined
-      };
-      
-      // Si la celda tiene marcadores, reemplazarlos
-      if (newCell.v && typeof newCell.v === 'string') {
-        let cellValue = newCell.v;
-        let hasMarkers = false;
-        
-        cellValue = cellValue.replace(markerRegex, (match, markerName) => {
-          hasMarkers = true;
-          const normalizedMarker = markerName.trim().toUpperCase();
-          const value = findValueInData(extractedData, normalizedMarker);
-          
-          if (value !== null && value !== undefined) {
-            return String(value);
-          }
-          
-          return match;
-        });
-        
-        if (hasMarkers) {
-          newCell.v = cellValue;
-          newCell.w = cellValue;
-        }
-      }
-      
-      worksheet[targetCellAddress] = newCell;
-    }
-  }
+  copyAndFillRowContinuous(worksheet, sourceRow, targetRow + 1, extractedData);
 }
 
 /**
@@ -485,7 +749,126 @@ function adjustFormulaRow(formula: string, sourceRow: number, targetRow: number)
     const newRow = parseInt(row) + rowDiff;
     return col + newRow;
   });
-};
+}
+
+/**
+ * Encuentra la última fila donde se colocaron datos para una factura específica
+ * Busca en todas las columnas para encontrar la fila más baja con datos de esa factura
+ */
+function findLastDataRowForPreviousInvoice(
+  worksheet: XLSX.WorkSheet,
+  templateRow: number,
+  currentPdfIndex: number
+): number {
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+  
+  // Si es la primera factura, retornar la fila plantilla
+  if (currentPdfIndex === 0) {
+    return templateRow;
+  }
+  
+  // Buscar desde la fila plantilla hacia abajo
+  let lastDataRow = templateRow;
+  const maxSearchRows = 200; // Limitar búsqueda
+  
+  // Buscar la fila más baja que tenga datos en cualquier columna
+  // (excluyendo celdas con fórmulas, que no deben contarse)
+  for (let row = templateRow + 1; row <= Math.min(range.e.r, templateRow + maxSearchRows); row++) {
+    let hasDataInRow = false;
+    
+    // Verificar todas las columnas de esta fila
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      const cell = worksheet[cellAddress];
+      
+      if (cell && !cell.f) { // No contar fórmulas
+        // Verificar si tiene datos (no vacío, no cero, no null)
+        if (cell.v !== undefined && 
+            cell.v !== null && 
+            cell.v !== '' && 
+            cell.v !== 0 && 
+            cell.v !== '0') {
+          hasDataInRow = true;
+          break; // Solo necesitamos saber que esta fila tiene datos
+        }
+      }
+    }
+    
+    // Si encontramos datos en esta fila, actualizar lastDataRow
+    if (hasDataInRow) {
+      lastDataRow = row;
+    }
+  }
+  
+  return lastDataRow;
+}
+
+/**
+ * Verifica si una fila tiene marcadores {{}}
+ */
+function hasMarkersInRow(worksheet: XLSX.WorkSheet, row: number): boolean {
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+  const markerRegex = /\{\{([^}]+)\}\}/;
+  
+  for (let col = range.s.c; col <= range.e.c; col++) {
+    const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+    const cell = worksheet[cellAddress];
+    
+    if (cell && cell.v && typeof cell.v === 'string' && markerRegex.test(cell.v)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Encuentra la siguiente fila plantilla disponible después de una fila dada
+ */
+function findNextTemplateRow(
+  worksheet: XLSX.WorkSheet,
+  startRow: number,
+  templateRows: number[]
+): number {
+  // Buscar la siguiente fila plantilla que esté después de startRow
+  for (const templateRow of templateRows) {
+    if (templateRow > startRow) {
+      return templateRow;
+    }
+  }
+  
+  return -1;
+}
+
+/**
+ * Duplica una fila plantilla en una nueva posición
+ */
+function duplicateTemplateRow(
+  worksheet: XLSX.WorkSheet,
+  sourceRow: number,
+  targetRow: number
+): void {
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+  
+  for (let col = range.s.c; col <= range.e.c; col++) {
+    const sourceCellAddress = XLSX.utils.encode_cell({ r: sourceRow, c: col });
+    const targetCellAddress = XLSX.utils.encode_cell({ r: targetRow, c: col });
+    const sourceCell = worksheet[sourceCellAddress];
+    
+    if (sourceCell) {
+      // Crear una copia de la celda
+      const newCell: XLSX.CellObject = {
+        ...sourceCell,
+        v: sourceCell.v,
+        t: sourceCell.t,
+        f: sourceCell.f ? adjustFormulaRow(sourceCell.f, sourceRow, targetRow) : undefined,
+        s: sourceCell.s ? { ...sourceCell.s } : undefined
+      };
+      
+      worksheet[targetCellAddress] = newCell;
+    }
+  }
+}
 
 /**
  * Busca un valor en los datos extraídos basándose en el nombre del marcador
