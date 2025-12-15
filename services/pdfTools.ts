@@ -32,6 +32,48 @@ const parsePageRanges = (rangeStr: string, totalPages: number): number[] => {
   return Array.from(pages).sort((a, b) => a - b);
 };
 
+// Convierte cualquier imagen soportada por el navegador a PNG para poder incrustarla
+const convertImageToPngBytes = async (arrayBuffer: ArrayBuffer, mimeType: string): Promise<Uint8Array> => {
+  const blob = new Blob([arrayBuffer], { type: mimeType || 'application/octet-stream' });
+
+  // Fallback a <img> si createImageBitmap no está disponible
+  const loadImageElement = (b: Blob) => new Promise<HTMLImageElement>((resolve, reject) => {
+    const url = URL.createObjectURL(b);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = (err) => {
+      URL.revokeObjectURL(url);
+      reject(err);
+    };
+    img.src = url;
+  });
+
+  const renderable: ImageBitmap | HTMLImageElement = ('createImageBitmap' in window)
+    ? await createImageBitmap(blob)
+    : await loadImageElement(blob);
+
+  const width = (renderable as any).width || 1;
+  const height = (renderable as any).height || 1;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('No se pudo preparar el lienzo para convertir la imagen.');
+
+  ctx.drawImage(renderable as any, 0, 0, width, height);
+
+  const pngBlob = await new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob((b) => b ? resolve(b) : reject(new Error('No se pudo generar PNG.')), 'image/png')
+  );
+
+  const pngArrayBuffer = await pngBlob.arrayBuffer();
+  return new Uint8Array(pngArrayBuffer);
+};
+
 // --- Merge PDFs ---
 export const mergePdfs = async (files: File[]): Promise<void> => {
   if (files.length < 2) throw new Error("Necesitas al menos 2 archivos para fusionar.");
@@ -59,13 +101,15 @@ export const imagesToPdf = async (files: File[], fitToA4: boolean = false): Prom
   for (const file of files) {
     const arrayBuffer = await file.arrayBuffer();
     let image;
-    
-    if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+
+    if (file.type.includes('jpeg') || file.type.includes('jpg')) {
       image = await pdfDoc.embedJpg(arrayBuffer);
     } else if (file.type === 'image/png') {
       image = await pdfDoc.embedPng(arrayBuffer);
     } else {
-      continue;
+      // Soporte ampliado (webp, gif, bmp, svg, etc.) convirtiendo a PNG
+      const pngBytes = await convertImageToPngBytes(arrayBuffer, file.type);
+      image = await pdfDoc.embedPng(pngBytes);
     }
 
     if (fitToA4) {
@@ -92,6 +136,10 @@ export const imagesToPdf = async (files: File[], fitToA4: boolean = false): Prom
         const page = pdfDoc.addPage([image.width, image.height]);
         page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
     }
+  }
+
+  if (pdfDoc.getPageCount() === 0) {
+    throw new Error("Formato de imagen no soportado. Intenta con PNG o JPG.");
   }
 
   const pdfBytes = await pdfDoc.save();
